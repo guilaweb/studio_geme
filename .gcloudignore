@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.gitignore
+.next/
+node_modules/
+.vscode/
+*.log
+.env.local
+firebase-debug.log*

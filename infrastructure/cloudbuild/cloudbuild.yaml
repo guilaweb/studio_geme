@@ -1,0 +1,54 @@
+steps:
+  # 1. Run automated backend integration tests
+  - name: 'python:3.13-slim'
+    id: 'backend-test'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        apt-get update && apt-get install -y libpq-dev build-essential
+        pip install -r apps/api/requirements.txt
+        export PYTHONPATH=apps/api
+        pytest tests/integration/test_api.py -v
+
+  # 2. Build and tag API container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-image'
+    args:
+      - 'build'
+      - '-f'
+      - 'infrastructure/docker/Dockerfile.api'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api:latest'
+      - '.'
+
+  # 3. Push to GCP Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-image'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api'
+
+  # 4. Deploy to Cloud Run with Secret Manager and Cloud SQL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-cloud-run'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'profundidade-api'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api:$COMMIT_SHA'
+      - '--region=europe-west1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-secrets=DATABASE_URL=profundidade-db-url:latest,SECRET_KEY=profundidade-jwt-secret:latest'
+      - '--set-env-vars=ENVIRONMENT=production,PROJECT_NAME=PROFUNDIDADE API,GCP_PROJECT_ID=$PROJECT_ID'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/profundidade-registry/api:latest'
+
+timeout: '1200s'

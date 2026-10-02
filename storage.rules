@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Function to check if a user is a member of a project (owner or in team subcollection)
+    function isProjectMember(projectId) {
+      return request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId 
+             || exists(/databases/$(database)/documents/projects/$(projectId)/team/$(request.auth.uid));
+    }
+
+    // Allow public read access for blog post images
+    match /blog/{allPaths=**} {
+      allow read;
+      // Allow write only for super-admins
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super-admin';
+    }
+    
+    // Project-specific files
+    match /projects/{projectId}/{allPaths=**} {
+      // Allow project members to read and write files within their project
+      allow read, write: if request.auth != null && isProjectMember(projectId);
+    }
+    
+    // User-specific files (e.g. subscription proofs)
+    match /subscriptions/{userId}/{allPaths=**} {
+      // Allow user to write to their own subscription folder
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow admins and financial managers to read
+      allow read: if request.auth != null && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super-admin' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Gestor Financeiro'
+      );
+    }
+
+    // Workforce profile pictures
+    match /workforce/{workforceId}/{allPaths=**} {
+        // Allow HR managers or super-admins to write
+        allow write: if request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super-admin' || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Gestor de RH');
+        // Allow any authenticated user to read profile pictures
+        allow read: if request.auth != null;
+    }
+
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

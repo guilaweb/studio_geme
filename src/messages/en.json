@@ -1,0 +1,135 @@
+{
+  "Header": {
+    "admin": "Admin",
+    "projects": "Projects",
+    "crm": "CRM",
+    "profile": "Profile",
+    "signOut": "Sign Out",
+    "features": "Features",
+    "blog": "Blog",
+    "pricing": "Pricing",
+    "signIn": "Sign In",
+    "getStarted": "Get Started"
+  },
+  "LandingPage": {
+    "hero": {
+      "title": "Your Construction Project, Under Total Control.",
+      "subtitle": "Geme is the complete platform for construction project management. Centralize documentation, track progress, and manage your teams, all in real time.",
+      "cta": "Start for Free"
+    },
+    "features": {
+      "title": "One Platform, Absolute Control",
+      "subtitle": "Powerful tools for every specialist and every phase of your project.",
+      "wbs": {
+        "title": "Planning & Control (WBS)",
+        "description": "Create Work Breakdown Structures (WBS), Gantt charts, baselines, and control physical progress."
+      },
+      "eva": {
+        "title": "Financial Control (EVA)",
+        "description": "Manage budgets, actual costs, and analyze project performance with Earned Value Analysis (EVA)."
+      },
+      "revisions": {
+        "title": "Document Revision Control",
+        "description": "Manage the version history of drawings and specifications, ensuring your team always uses the correct information."
+      },
+      "requirements": {
+        "title": "Requirements Management",
+        "description": "Document, track, and validate all technical and functional requirements, linking them to quality tests."
+      },
+      "changes": {
+        "title": "Change Management",
+        "description": "Formalize and control all scope changes with a clear and traceable approval workflow."
+      },
+      "dailyReport": {
+        "title": "Digital Work Log",
+        "description": "Record daily progress, manpower, equipment, and occurrences with photos and automatic reports."
+      },
+      "risks": {
+        "title": "Risk Analysis",
+        "description": "Identify, assess, and create mitigation plans for project risks, with AI-powered analysis support."
+      },
+      "clientPortal": {
+        "title": "Client Portal",
+        "description": "Offer your clients a transparent view of the work's progress, with controlled access to reports."
+      }
+    },
+    "clientPortal": {
+      "tag": "CLIENT PORTAL",
+      "title": "Total Transparency for Those Who Invest",
+      "subtitle": "Offer your clients a window into project progress, with controlled access, simplified reports, and a formal communication channel to increase trust.",
+      "feature1": {
+        "title": "Intuitive Dashboards",
+        "description": "Clear view of physical and financial progress, and site photographs."
+      },
+      "feature2": {
+        "title": "Centralized Communication",
+        "description": "A direct channel for approvals, requests, and questions, all duly recorded."
+      },
+      "cta": "Access the Portal"
+    },
+    "finalCta": {
+      "title": "Start Transforming Your Construction Management Today",
+      "subtitle": "Join hundreds of professionals who are already building smarter.",
+      "cta": "Start for Free Now"
+    },
+    "pricing": {
+      "title": "Plans and Pricing",
+      "subtitle": "Start for free and scale as you need. No surprises.",
+      "hobby": {
+        "title": "Hobby",
+        "description": "For small projects or personal use.",
+        "price": "Free",
+        "period": "forever",
+        "feature1": "1 Project",
+        "feature2": "Up to 5 users",
+        "feature3": "1GB of storage",
+        "feature4": "Community support",
+        "cta": "Start Now"
+      },
+      "pro": {
+        "title": "Professional",
+        "description": "For teams and companies managing multiple works.",
+        "price": "Kz 49,999",
+        "period": "per month",
+        "feature1": "Unlimited projects",
+        "feature2": "Unlimited users",
+        "feature3": "50GB of storage",
+        "feature4": "Advanced reports",
+        "feature5": "Priority support",
+        "cta": "Subscribe",
+        "ctaLoading": "Redirecting..."
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "Custom solutions and advanced security.",
+        "price": "Custom",
+        "feature1": "Everything from Pro plus...",
+        "feature2": "Single Sign-On (SSO)",
+        "feature3": "Custom permissions",
+        "feature4": "Dedicated account manager",
+        "cta": "Contact Us"
+      }
+    },
+    "footer": {
+      "copyright": "Geme. All rights reserved."
+    },
+    "toasts": {
+      "authRequired": {
+        "title": "Authentication Required",
+        "description": "Please create an account or sign in to continue."
+      },
+      "authTokenMissing": "Authentication token not found.",
+      "checkoutError": {
+        "generic": "Failed to create checkout session."
+      },
+      "stripeJsError": "Stripe.js failed to load.",
+      "redirectError": {
+        "title": "Redirect Error"
+      },
+      "paymentError": {
+        "title": "Error Initiating Payment",
+        "generic": "Please try again later."
+      }
+    }
+  }
+}

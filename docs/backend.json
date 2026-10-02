@@ -1,0 +1,77 @@
+
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Main entity representing a construction or mining project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "status": { "type": "string" },
+        "progress": { "type": "number" }
+      },
+      "required": ["id", "name", "ownerId", "status"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Extended user information stored in Firestore.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string" },
+        "plan": { "type": "string" }
+      }
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification for project alerts and updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "message": { "type": "string" },
+        "link": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "google.com",
+      "phone"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "description": "Top-level collection for projects. Secured by ownerId and team subcollection."
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "description": "Global user profiles and roles."
+        }
+      },
+      {
+        "path": "/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "description": "User specific notifications."
+        }
+      }
+    ],
+    "reasoning": "RESOLUÇÃO DO ERRO 'auth/requests-to-this-api-identitytoolkit-are-blocked': 1. Ative a 'Identity Toolkit API' no Google Cloud Console. 2. IMPORTANTE: Vá a APIs e Serviços > Credenciais, edite a sua Chave de API e verifique as 'Restrições de API'. Se a chave estiver restrita, adicione a 'Identity Toolkit API' à lista de permitidas. 3. Garanta que localhost e o domínio da app estão em 'Authorized Domains' no Firebase Console."
+  }
+}

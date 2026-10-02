@@ -1,0 +1,135 @@
+{
+  "Header": {
+    "admin": "Admin",
+    "projects": "Projetos",
+    "crm": "CRM",
+    "profile": "Perfil",
+    "signOut": "Sair",
+    "features": "Funcionalidades",
+    "blog": "Blog",
+    "pricing": "Preços",
+    "signIn": "Entrar",
+    "getStarted": "Começar Agora"
+  },
+  "LandingPage": {
+    "hero": {
+      "title": "A Sua Obra, Sob Controlo Total.",
+      "subtitle": "Profundidade é a plataforma completa para gestão de projetos de construção. Centralize a documentação, acompanhe o progresso e gira as suas equipas, tudo em tempo real.",
+      "cta": "Comece Grátis"
+    },
+    "features": {
+      "title": "Uma Plataforma, Controlo Absoluto",
+      "subtitle": "Ferramentas poderosas para cada especialista e cada fase do seu projeto.",
+      "wbs": {
+        "title": "Planeamento & Controlo (EAP)",
+        "description": "Crie Estruturas Analíticas de Projeto (EAP), cronogramas em Gantt, linhas de base e controle o progresso físico."
+      },
+      "eva": {
+        "title": "Controlo Financeiro (EVA)",
+        "description": "Gira orçamentos, custos reais, e analise o desempenho do projeto com a Análise de Valor Agregado (EVA)."
+      },
+      "revisions": {
+        "title": "Controlo de Revisões de Documentos",
+        "description": "Gira o histórico de versões de desenhos e especificações, garantindo que a sua equipa usa sempre a informação correta."
+      },
+      "requirements": {
+        "title": "Gestão de Requisitos",
+        "description": "Documente, rastreie e valide todos os requisitos técnicos e funcionais, associando-os a testes de qualidade."
+      },
+      "changes": {
+        "title": "Gestão de Mudanças",
+        "description": "Formalize e controle todas as alterações de escopo com um fluxo de aprovação claro e rastreável."
+      },
+      "dailyReport": {
+        "title": "Diário de Obras Digital",
+        "description": "Registe o progresso diário, mão de obra, equipamentos e ocorrências com fotos e relatórios automáticos."
+      },
+      "risks": {
+        "title": "Análise de Riscos",
+        "description": "Identifique, avalie e crie planos de mitigação para os riscos do projeto, com suporte de análise por IA."
+      },
+      "clientPortal": {
+        "title": "Portal do Cliente",
+        "description": "Ofereça aos seus clientes uma visão transparente do progresso da obra, com acesso controlado a relatórios."
+      }
+    },
+    "clientPortal": {
+      "tag": "PORTAL DO CLIENTE",
+      "title": "Transparência Total para Quem Investe",
+      "subtitle": "Ofereça aos seus clientes uma janela para o progresso dos projetos, com acesso controlado, relatórios simplificados e um canal de comunicação formal para aumentar a confiança.",
+      "feature1": {
+        "title": "Dashboards Intuitivos",
+        "description": "Visão clara do avanço físico, financeiro e fotografias da obra."
+      },
+      "feature2": {
+        "title": "Comunicação Centralizada",
+        "description": "Um canal direto para aprovações, pedidos e dúvidas, tudo devidamente registado."
+      },
+      "cta": "Aceder ao Portal"
+    },
+    "finalCta": {
+      "title": "Comece a Transformar a Gestão das Suas Obras Hoje",
+      "subtitle": "Junte-se a centenas de profissionais que já estão a construir de forma mais inteligente.",
+      "cta": "Comece Grátis Agora"
+    },
+    "pricing": {
+      "title": "Planos e Preços",
+      "subtitle": "Comece gratuitamente e dimensione conforme a sua necessidade. Sem surpresas.",
+      "hobby": {
+        "title": "Hobby",
+        "description": "Para pequenos projetos ou uso pessoal.",
+        "price": "Grátis",
+        "period": "para sempre",
+        "feature1": "1 Projeto",
+        "feature2": "Até 5 utilizadores",
+        "feature3": "1GB de armazenamento",
+        "feature4": "Suporte da comunidade",
+        "cta": "Começar Agora"
+      },
+      "pro": {
+        "title": "Profissional",
+        "description": "Para equipas e empresas que gerem múltiplas obras.",
+        "price": "49.999 Kz",
+        "period": "por mês",
+        "feature1": "Projetos ilimitados",
+        "feature2": "Utilizadores ilimitados",
+        "feature3": "50GB de armazenamento",
+        "feature4": "Relatórios avançados",
+        "feature5": "Suporte prioritário",
+        "cta": "Subscrever",
+        "ctaLoading": "A redirecionar..."
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "Soluções personalizadas e segurança avançada.",
+        "price": "Personalizado",
+        "feature1": "Tudo do Pro e mais...",
+        "feature2": "Single Sign-On (SSO)",
+        "feature3": "Permissões personalizadas",
+        "feature4": "Gestor de conta dedicado",
+        "cta": "Fale Connosco"
+      }
+    },
+    "footer": {
+      "copyright": "Profundidade. Todos os direitos reservados."
+    },
+    "toasts": {
+      "authRequired": {
+        "title": "Autenticação Necessária",
+        "description": "Por favor, crie uma conta ou faça login para continuar."
+      },
+      "authTokenMissing": "Token de autenticação não encontrado.",
+      "checkoutError": {
+        "generic": "Falha ao criar sessão de checkout."
+      },
+      "stripeJsError": "Stripe.js falhou ao carregar.",
+      "redirectError": {
+        "title": "Erro de Redirecionamento"
+      },
+      "paymentError": {
+        "title": "Erro ao Iniciar Pagamento",
+        "generic": "Por favor, tente novamente mais tarde."
+      }
+    }
+  }
+}

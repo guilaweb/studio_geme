@@ -1,0 +1,40 @@
+{
+  "placeholderImages": [
+    {
+      "id": "1",
+      "description": "Abstract programming art",
+      "imageUrl": "https://picsum.photos/seed/1/600/400",
+      "imageHint": "code abstract"
+    },
+    {
+      "id": "2",
+      "description": "Minimalist design shapes",
+      "imageUrl": "https://picsum.photos/seed/2/600/400",
+      "imageHint": "design minimal"
+    },
+    {
+      "id": "3",
+      "description": "AI-generated neural network visualization",
+      "imageUrl": "https://picsum.photos/seed/3/600/400",
+      "imageHint": "ai neural"
+    },
+    {
+      "id": "4",
+      "description": "Productivity tools on a desk",
+      "imageUrl": "https://picsum.photos/seed/4/600/400",
+      "imageHint": "desk productivity"
+    },
+    {
+      "id": "5",
+      "description": "A person reading news on a tablet",
+      "imageUrl": "https://picsum.photos/seed/5/600/400",
+      "imageHint": "news reading"
+    },
+    {
+      "id": "6",
+      "description": "User interface wireframes on a board",
+      "imageUrl": "https://picsum.photos/seed/6/600/400",
+      "imageHint": "ui ux"
+    }
+  ]
+}

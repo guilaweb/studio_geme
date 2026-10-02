@@ -1,0 +1,190 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Funções Auxiliares de Autenticação e Multi-Tenancy ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super-admin'
+      );
+    }
+
+    // Verifica se o utilizador pertence à organização (tenant)
+    function isOrgMember(orgId) {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        exists(/databases/$(database)/documents/organization_members/$(orgId + '_' + request.auth.uid))
+      );
+    }
+
+    function getOrgMember(orgId) {
+      return get(/databases/$(database)/documents/organization_members/$(orgId + '_' + request.auth.uid)).data;
+    }
+
+    // Verifica se o utilizador é administrador do tenant
+    function isOrgAdmin(orgId) {
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        (
+          exists(/databases/$(database)/documents/organization_members/$(orgId + '_' + request.auth.uid)) &&
+          getOrgMember(orgId).role in ['super-admin', 'admin', 'director']
+        )
+      );
+    }
+
+    // Verifica acesso a projeto no tenant com granularidade
+    function canAccessProject(orgId, projectId) {
+      let isMember = isOrgMember(orgId);
+      let memberExists = exists(/databases/$(database)/documents/organization_members/$(orgId + '_' + request.auth.uid));
+      let memberDoc = memberExists ? getOrgMember(orgId) : null;
+      let hasAllAccess = isSuperAdmin() || (memberDoc != null && (memberDoc.projectAccessType == 'all' || memberDoc.role in ['admin', 'director']));
+      let isAssigned = memberDoc != null && memberDoc.assignedProjectIds != null && projectId in memberDoc.assignedProjectIds;
+      let isTeamMember = exists(/databases/$(database)/documents/projects/$(projectId)/team/$(request.auth.uid));
+      let isProjectOwner = get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+      
+      return isSignedIn() && (hasAllAccess || isAssigned || isTeamMember || isProjectOwner);
+    }
+
+    // Verifica se o utilizador pode escrever no projeto (Gestor, Editor, Fiscal ou Administrador)
+    function canWriteInProject(projectId) {
+      let projectData = get(/databases/$(database)/documents/projects/$(projectId)).data;
+      let orgId = projectData.organizationId != null ? projectData.organizationId : 'org_default_profundidade';
+      let isOrgAdm = isOrgAdmin(orgId);
+      let isOwner = projectData.ownerId == request.auth.uid;
+      let teamMember = exists(/databases/$(database)/documents/projects/$(projectId)/team/$(request.auth.uid));
+      let role = teamMember ? get(/databases/$(database)/documents/projects/$(projectId)/team/$(request.auth.uid)).data.role : 'none';
+      return isSignedIn() && (isOrgAdm || isOwner || role in ['Gestor', 'Editor', 'Mestre de Obra', 'Fiscal']);
+    }
+
+    // --- 1. Organizações (Tenants) ---
+    match /organizations/{orgId} {
+      allow read: if isOrgMember(orgId);
+      allow create: if isSignedIn(); // Qualquer utilizador autenticado pode criar a sua organização
+      allow update: if isOrgAdmin(orgId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- 2. Membros da Organização ---
+    match /organization_members/{memberDocId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isOrgMember(resource.data.organizationId)
+      );
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (
+        isOrgAdmin(resource.data.organizationId) ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
+    // --- 3. Perfis de Utilizador ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) || isSuperAdmin();
+    }
+
+    // --- 4. Projetos (Com Isolamento por Tenant) ---
+    match /projects/{projectId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn() && (
+        isSuperAdmin() ||
+        resource.data.organizationId == null ||
+        canAccessProject(resource.data.organizationId, projectId)
+      );
+      allow create: if isSignedIn() && (
+        request.resource.data.organizationId == null ||
+        isOrgMember(request.resource.data.organizationId)
+      );
+      allow update: if isSignedIn() && (
+        isSuperAdmin() ||
+        canWriteInProject(projectId)
+      );
+      allow delete: if isSignedIn() && (
+        isSuperAdmin() ||
+        (resource.data.organizationId != null && isOrgAdmin(resource.data.organizationId)) ||
+        resource.data.ownerId == request.auth.uid
+      );
+
+      // Subcoleções de Projeto (WBS, Diários, Transações, Autos de Medição, etc.)
+      match /{allSubcollections=**} {
+        allow read: if isSignedIn();
+        allow write: if canWriteInProject(projectId) || isSuperAdmin();
+      }
+    }
+
+    // --- 5. Perfil da Empresa / Tenant ---
+    match /company_profile/{profileId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // --- 6. Clientes e Contratos ---
+    match /company_clients/{clientId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    match /company_contracts/{contractId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // --- 7. Equipamento do Tenant ---
+    match /equipment/{eqId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+      match /maintenanceRecords/{mId} { allow read, write: if isSignedIn(); }
+    }
+
+    // --- 8. CRM Global / Tenant ---
+    match /leads/{leadId} {
+      allow read, write: if isSignedIn();
+    }
+    match /opportunities/{oppId} {
+      allow read, write: if isSignedIn();
+      match /activities/{actId} { allow read, write: if isSignedIn(); }
+      match /customerQuotes/{qId} { allow read, write: if isSignedIn(); }
+    }
+    match /accounts/{accId} {
+      allow read, write: if isSignedIn();
+      match /activities/{actId} { allow read, write: if isSignedIn(); }
+    }
+
+    // --- 9. Recursos Humanos e Quadro de Pessoal ---
+    match /workforce/{memberId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+      match /leaveRequests/{reqId} { allow read, write: if isSignedIn(); }
+      match /payslips/{slipId} { allow read, write: if isSignedIn(); }
+    }
+    match /hrRequests/{reqId} { allow read, write: if isSignedIn(); }
+    match /hrDepartments/{deptId} { allow read, write: if isSignedIn(); }
+    match /hrTeams/{teamId} { allow read, write: if isSignedIn(); }
+    match /hrReviews/{revId} { allow read, write: if isSignedIn(); }
+
+    // --- 10. Blog (Público) ---
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // --- 11. Notificações ---
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if isSignedIn();
+    }
+
+    // --- 12. Pedidos de Subscrição ---
+    match /subscriptionRequests/{requestId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+      allow write: if isSignedIn();
+    }
+  }
+}
