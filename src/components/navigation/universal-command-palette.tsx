@@ -214,16 +214,16 @@ export function UniversalCommandPalette({
           </CommandItem>
 
           <CommandItem
-            value="osint entidades desambiguacao resolucao entity resolution"
-            onSelect={() => runCommand(() => router.push('/osint?tab=entidades'))}
+            value="osint identidade digital resolucao entidades telefones numeros perfis sociais correlacao grafo desambiguacao"
+            onSelect={() => runCommand(() => router.push('/osint?tab=identidade'))}
             className="cursor-pointer py-2"
           >
             <Users className="mr-2.5 h-4 w-4 text-emerald-400" />
             <div className="flex flex-col flex-1 truncate">
-              <span className="font-semibold text-xs text-foreground truncate">Resolução de Entidades (Entity Resolution)</span>
-              <span className="text-[10px] text-muted-foreground truncate">Correspondência com score analítico e indicadores de verificação</span>
+              <span className="font-semibold text-xs text-foreground truncate">Identidade Digital & Resolução de Entidades</span>
+              <span className="text-[10px] text-muted-foreground truncate">Correlação probatória de telefones, perfis sociais, emails e grafo analítico</span>
             </div>
-            <CommandShortcut className="text-[10px] font-mono">RESOLVER</CommandShortcut>
+            <CommandShortcut className="text-[10px] font-mono">IDENTIDADE</CommandShortcut>
           </CommandItem>
 
           <CommandItem

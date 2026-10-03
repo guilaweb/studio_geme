@@ -67,6 +67,7 @@ import { OsintMediaAnalyzer } from "@/components/osint/osint-media-analyzer";
 import { OsintScrapingWorkspace } from "@/components/osint/scraping/osint-scraping-workspace";
 import { OsintDorkBuilder } from "@/components/osint/dorks/osint-dork-builder";
 import { OsintTosIntelligence } from "@/components/osint/tos/osint-tos-intelligence";
+import { OsintIdentityWorkspace } from "@/components/osint/identity/osint-identity-workspace";
 
 export default function OsintPage() {
   const { user } = useAuth();
@@ -78,6 +79,7 @@ export default function OsintPage() {
     | "pesquisas"
     | "fontes"
     | "entidades"
+    | "identidade"
     | "descobertas"
     | "relacoes"
     | "timeline"
@@ -142,6 +144,7 @@ export default function OsintPage() {
           "pesquisas",
           "fontes",
           "entidades",
+          "identidade",
           "descobertas",
           "relacoes",
           "timeline",
@@ -427,15 +430,15 @@ export default function OsintPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("entidades")}
+            onClick={() => setActiveTab("identidade")}
             className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
-              activeTab === "entidades"
+              activeTab === "identidade" || activeTab === "entidades"
                 ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400"
                 : "text-slate-400 hover:text-white"
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Entidades & Resolução</span>
+            <span>Identidade & Resolução</span>
           </button>
 
           <button
@@ -1116,9 +1119,9 @@ export default function OsintPage() {
         )}
 
         {/* ============================================================ */}
-        {/* ABA 5: ENTIDADES & RESOLUÇÃO */}
+        {/* ABA: IDENTIDADE DIGITAL & RESOLUÇÃO DE ENTIDADES */}
         {/* ============================================================ */}
-        {activeTab === "entidades" && <OsintEntityResolver />}
+        {(activeTab === "entidades" || activeTab === "identidade") && <OsintIdentityWorkspace />}
 
         {/* ============================================================ */}
         {/* ABA 6: DESCOBERTAS (Construção Gradual da Investigação) */}
