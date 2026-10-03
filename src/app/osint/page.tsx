@@ -31,7 +31,9 @@ import {
   X,
   Play,
   FileDown,
-  Link2
+  Link2,
+  Mail,
+  Camera
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
@@ -59,6 +61,8 @@ import { OsintPersonAnalyzer } from "@/components/osint/osint-person-analyzer";
 import { OsintSiAssistant } from "@/components/osint/osint-si-assistant";
 import { OsintIpAnalyzer } from "@/components/osint/osint-ip-analyzer";
 import { OsintCompanyAnalyzer } from "@/components/osint/osint-company-analyzer";
+import { OsintEmailAnalyzer } from "@/components/osint/osint-email-analyzer";
+import { OsintMediaAnalyzer } from "@/components/osint/osint-media-analyzer";
 
 export default function OsintPage() {
   const { user } = useAuth();
@@ -77,6 +81,8 @@ export default function OsintPage() {
     | "dominio-analyzer"
     | "ip-analyzer"
     | "empresa-analyzer"
+    | "email-analyzer"
+    | "media-analyzer"
     | "pessoa-analyzer"
     | "si-assistant"
   >("visao-geral");
@@ -117,6 +123,36 @@ export default function OsintPage() {
 
   // Feedback Toast
   const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam) {
+        const validTabs = [
+          "visao-geral",
+          "nova-pesquisa",
+          "pesquisas",
+          "fontes",
+          "entidades",
+          "descobertas",
+          "relacoes",
+          "timeline",
+          "coletores",
+          "dominio-analyzer",
+          "ip-analyzer",
+          "empresa-analyzer",
+          "email-analyzer",
+          "media-analyzer",
+          "pessoa-analyzer",
+          "si-assistant",
+        ];
+        if (validTabs.includes(tabParam)) {
+          setActiveTab(tabParam as any);
+        }
+      }
+    }
+  }, []);
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -474,6 +510,30 @@ export default function OsintPage() {
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>Inteligência Societária (NIF)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("email-analyzer")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "email-analyzer"
+                ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Análise de Email & Brechas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("media-analyzer")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "media-analyzer"
+                ? "bg-slate-900 text-emerald-400 border-t-2 border-emerald-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Metadados EXIF & Mídia</span>
           </button>
 
           <button
@@ -1134,7 +1194,26 @@ export default function OsintPage() {
         )}
 
         {/* ============================================================ */}
-        {/* ABA 13: RECONHECIMENTO DE PESSOA ESPECÍFICA */}
+        {/* ABA 13: ANÁLISE DE EMAIL & EXPOSIÇÃO DE CREDENCIAIS */}
+        {/* ============================================================ */}
+        {activeTab === "email-analyzer" && (
+          <OsintEmailAnalyzer
+            initialEmail="manuel.v@vortex-consulting.org"
+            onSaveAsEvidence={(eml) => showToast(`Snapshot de ${eml} preservado no Cofre Probatório.`)}
+          />
+        )}
+
+        {/* ============================================================ */}
+        {/* ABA 14: METADADOS EXIF, IMAGEM & PERCEPTUAL HASH */}
+        {/* ============================================================ */}
+        {activeTab === "media-analyzer" && (
+          <OsintMediaAnalyzer
+            onSaveAsEvidence={(media) => showToast(`Metadados de ${media} arquivados no Cofre Probatório.`)}
+          />
+        )}
+
+        {/* ============================================================ */}
+        {/* ABA 15: RECONHECIMENTO DE PESSOA ESPECÍFICA */}
         {/* ============================================================ */}
         {activeTab === "pessoa-analyzer" && (
           <OsintPersonAnalyzer />

@@ -30,7 +30,10 @@ import {
   Smartphone,
   Radio,
   Globe,
-  Users
+  Users,
+  Server,
+  Mail,
+  Camera
 } from 'lucide-react';
 import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -219,6 +222,58 @@ export function UniversalCommandPalette({
               <span className="text-[10px] text-muted-foreground truncate">Correspondência com score analítico e indicadores de verificação</span>
             </div>
             <CommandShortcut className="text-[10px] font-mono">RESOLVER</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint ip redes bgp asn roteamento tor reverse dns ptr"
+            onSelect={() => runCommand(() => router.push('/osint?tab=ip-analyzer'))}
+            className="cursor-pointer py-2"
+          >
+            <Server className="mr-2.5 h-4 w-4 text-purple-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Reconhecimento de IP & Redes</span>
+              <span className="text-[10px] text-muted-foreground truncate">Resolução reversa PTR, ASN/BGP, geolocalização e deteção de nós Tor</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">IP</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint empresa nif sociedade socios diario da republica ubo"
+            onSelect={() => runCommand(() => router.push('/osint?tab=empresa-analyzer'))}
+            className="cursor-pointer py-2"
+          >
+            <Building2 className="mr-2.5 h-4 w-4 text-sky-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Inteligência Societária & NIF</span>
+              <span className="text-[10px] text-muted-foreground truncate">Pactos sociais, extratos de Diários da República e red flags AML</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">NIF</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint email correio brechas spf dmarc pgp gravatar vazamentos"
+            onSelect={() => runCommand(() => router.push('/osint?tab=email-analyzer'))}
+            className="cursor-pointer py-2"
+          >
+            <Mail className="mr-2.5 h-4 w-4 text-amber-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Análise de Email & Brechas Públicas</span>
+              <span className="text-[10px] text-muted-foreground truncate">Validação SPF/DMARC anti-spoofing e correlação de credenciais vazadas</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">EMAIL</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint imagem foto exif gps coordenadas phash perceptual hash camera"
+            onSelect={() => runCommand(() => router.push('/osint?tab=media-analyzer'))}
+            className="cursor-pointer py-2"
+          >
+            <Camera className="mr-2.5 h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Metadados EXIF & Mídia Forense</span>
+              <span className="text-[10px] text-muted-foreground truncate">Parâmetros ópticos, geolocalização por satélite e Perceptual Hash</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">EXIF</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
