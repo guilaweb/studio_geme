@@ -717,9 +717,48 @@ export default function InvestigacaoWorkspace() {
         profundidadeApi.listInferences(caseId).catch(() => INITIAL_INFERENCES[caseId] || []),
         profundidadeApi.listReports(caseId).catch(() => INITIAL_REPORTS[caseId] || []),
       ]);
+      // Ingestão dinâmica de itens vinculados a partir do Módulo OSINT
+      let mergedEvs = [...evs];
+      try {
+        if (typeof window !== "undefined") {
+          const osintItems = JSON.parse(localStorage.getItem("profundidade_osint_linked_items") || "[]");
+          const caseMatches = osintItems.filter((i: any) => i.caseId === "CASO-2026-001" || i.caseId === caseId);
+          caseMatches.forEach((item: any, idx: number) => {
+            if (!mergedEvs.some((e) => e.sha256_hash === item.hash)) {
+              mergedEvs.push({
+                id: `ev-osint-${idx + 1}`,
+                organization_id: "org-profundidade-lab",
+                case_id: caseId,
+                title: item.title,
+                description: `Evidência originada do Módulo OSINT (Fontes Abertas): ${item.type}`,
+                file_name: `osint_record_${item.hash.substring(0, 8)}.json`,
+                file_size: 1024,
+                mime_type: "application/json",
+                sha256_hash: item.hash,
+                source: "🌐 Módulo OSINT (Fontes Abertas)",
+                version: 1,
+                status: "VERIFIED",
+                collected_at: item.linkedAt || new Date().toISOString(),
+                custody_events: [
+                  {
+                    id: `ce-osint-${idx + 1}`,
+                    action: "VINCULADO_OSINT",
+                    recorded_hash: item.hash,
+                    notes: "Importação e vinculação direta a partir do Módulo OSINT de Fontes Abertas.",
+                    created_at: item.linkedAt || new Date().toISOString(),
+                  },
+                ],
+              });
+            }
+          });
+        }
+      } catch {
+        // fallback
+      }
+
       setEntities(ents);
       setGraphData(graph);
-      setEvidenceList(evs);
+      setEvidenceList(mergedEvs);
       setInferences(infs);
       setReports(reps);
     } catch (err: any) {

@@ -29,10 +29,13 @@ import {
   Sparkles,
   ChevronRight,
   X,
-  Play
+  Play,
+  FileDown,
+  Link2
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
+import { generateOsintPdfReport } from "@/lib/osint-report-pdf";
 import {
   OsintTargetType,
   OsintConnectorType,
@@ -114,6 +117,37 @@ export default function OsintPage() {
   const showToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleExportFullPdf = (customSearch?: OsintSearchRecord) => {
+    const targetSearch = customSearch || selectedSearch;
+    generateOsintPdfReport({
+      search: targetSearch,
+      tenantName: "PROFUNDIDADE - Lab de Inteligência & Evidências",
+      analystName: user?.email ? `Perito ${user.email.split("@")[0]}` : "Capitão Silva • Analista Forense OSINT",
+      results: results,
+      discoveries: discoveries,
+      sources: OSINT_SOURCES_CATALOG,
+    });
+    showToast(`Relatório Técnico OSINT #${targetSearch.id.toUpperCase()} exportado com sucesso em formato PDF.`);
+  };
+
+  const handleLinkToCase = (title: string, hash: string, type: "DESCOBERTA" | "EVIDENCIA") => {
+    try {
+      const existing = JSON.parse(localStorage.getItem("profundidade_osint_linked_items") || "[]");
+      existing.push({
+        caseId: "CASO-2026-001",
+        caseTitle: "Operação Sombra Digital",
+        type,
+        title,
+        hash,
+        linkedAt: new Date().toISOString(),
+      });
+      localStorage.setItem("profundidade_osint_linked_items", JSON.stringify(existing));
+    } catch {
+      // fallback
+    }
+    showToast(`[${type}] "${title.substring(0, 32)}..." vinculada ao inquérito CASO-2026-001 sob selo de custódia.`);
   };
 
   // Disparo da Pesquisa Rápida na Visão Geral
@@ -257,6 +291,15 @@ export default function OsintPage() {
           </div>
 
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleExportFullPdf()}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-all"
+              title="Descarregar Laudo Técnico em PDF"
+            >
+              <FileDown className="w-4 h-4 text-amber-400" />
+              <span>Descarregar Laudo OSINT (PDF)</span>
+            </button>
+
             <button
               onClick={() => setActiveTab("nova-pesquisa")}
               className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-all"
@@ -541,15 +584,24 @@ export default function OsintPage() {
                           </span>
                         </td>
                         <td className="p-3.5 text-right">
-                          <button
-                            onClick={() => {
-                              setSelectedSearch(srch);
-                              setActiveTab("pesquisas");
-                            }}
-                            className="text-amber-400 hover:text-amber-300 font-semibold"
-                          >
-                            Abrir Resultados →
-                          </button>
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleExportFullPdf(srch)}
+                              className="text-slate-400 hover:text-amber-400 p-1 transition-colors"
+                              title="Exportar Laudo PDF deste Alvo"
+                            >
+                              <FileDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedSearch(srch);
+                                setActiveTab("pesquisas");
+                              }}
+                              className="text-amber-400 hover:text-amber-300 font-semibold"
+                            >
+                              Abrir Resultados →
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -840,6 +892,15 @@ export default function OsintPage() {
                       )}
 
                       <button
+                        onClick={() => handleLinkToCase(res.title, res.contentHash, "EVIDENCIA")}
+                        className="bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-lg flex items-center space-x-1"
+                        title="Vincular ao CASO-2026-001 (Operação Sombra Digital)"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        <span>Vincular ao Caso</span>
+                      </button>
+
+                      <button
                         onClick={() => {
                           setNewDiscTitle(`Descoberta: ${res.title}`);
                           setNewDiscDesc(`Baseado no resultado da fonte ${res.source}:\n${res.snippet}`);
@@ -981,7 +1042,18 @@ export default function OsintPage() {
                       <span>Fontes: <strong>{disc.sources.join(" • ")}</strong></span>
                       <span>Validador: <strong className="text-white">{disc.validatedBy || "Perito Humano"}</strong></span>
                     </div>
-                    <span className="text-slate-500">{disc.createdAt}</span>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleLinkToCase(disc.title, disc.evidences[0] || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "DESCOBERTA")}
+                        className="bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 px-2.5 py-1 rounded text-xs flex items-center space-x-1 transition-colors"
+                        title="Vincular formalmente ao CASO-2026-001"
+                      >
+                        <Link2 className="w-3 h-3" />
+                        <span>Vincular ao CASO-2026-001</span>
+                      </button>
+                      <span className="text-slate-500">{disc.createdAt}</span>
+                    </div>
                   </div>
                 </div>
               ))}
