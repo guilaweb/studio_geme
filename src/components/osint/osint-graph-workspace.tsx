@@ -17,7 +17,11 @@ import {
   Info,
   Shield,
   Layers,
-  Sparkles
+  Sparkles,
+  Link2,
+  FileDown,
+  Search,
+  Copy
 } from "lucide-react";
 import {
   OsintGraphNode,
@@ -34,7 +38,10 @@ export function OsintGraphWorkspace() {
   const [selectedNode, setSelectedNode] = useState<OsintGraphNode | null>(INITIAL_OSINT_GRAPH_NODES[0]);
   const [selectedEdge, setSelectedEdge] = useState<OsintGraphEdge | null>(null);
   const [filterType, setFilterType] = useState<string>("TODOS");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showNewRelModal, setShowNewRelModal] = useState(false);
+  const [showNewNodeModal, setShowNewNodeModal] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   // Formulário de nova relação
   const [newRelSource, setNewRelSource] = useState(nodes[0]?.id || "");
@@ -42,9 +49,23 @@ export function OsintGraphWorkspace() {
   const [newRelType, setNewRelType] = useState<OsintGraphEdge["relation"]>("ASSOCIATED_WITH");
   const [newRelEvidence, setNewRelEvidence] = useState("Fonte Pública Auditada");
 
+  // Formulário de novo nó
+  const [newNodeLabel, setNewNodeLabel] = useState("");
+  const [newNodeType, setNewNodeType] = useState<OsintGraphNode["type"]>("PESSOA");
+  const [newNodeIdentifier, setNewNodeIdentifier] = useState("");
+  const [newNodeRisk, setNewNodeRisk] = useState("0.50");
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
   const filteredNodes = nodes.filter((n) => {
-    if (filterType === "TODOS") return true;
-    return n.type === filterType;
+    const matchesType = filterType === "TODOS" || n.type === filterType;
+    const matchesSearch =
+      n.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (n.identifier && n.identifier.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesType && matchesSearch;
   });
 
   const handleAddRelationship = (e: React.FormEvent) => {
@@ -62,6 +83,62 @@ export function OsintGraphWorkspace() {
     };
     setEdges((prev) => [newEdge, ...prev]);
     setShowNewRelModal(false);
+    showToast("Vínculo relacional adicionado ao grafo com sucesso.");
+  };
+
+  const handleCreateNode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNodeLabel.trim()) return;
+
+    const newNode: OsintGraphNode = {
+      id: `node-${Date.now()}`,
+      label: newNodeLabel.trim(),
+      type: newNodeType,
+      identifier: newNodeIdentifier.trim() || undefined,
+      riskScore: parseFloat(newNodeRisk) || 0.5,
+    };
+
+    setNodes((prev) => [...prev, newNode]);
+    setSelectedNode(newNode);
+    setShowNewNodeModal(false);
+    setNewNodeLabel("");
+    setNewNodeIdentifier("");
+    showToast(`Entidade [${newNode.label}] adicionada ao grafo.`);
+  };
+
+  const handleLinkNodeToCase = (node: OsintGraphNode) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem("profundidade_osint_linked_items") || "[]");
+      const hash = "7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c";
+      existing.push({
+        caseId: "CASO-2026-001",
+        caseTitle: "Operação Sombra Digital",
+        type: "ENTIDADE_GRAFO",
+        title: `Nó de Inteligência: ${node.label} (${node.type})`,
+        hash,
+        linkedAt: new Date().toISOString(),
+      });
+      localStorage.setItem("profundidade_osint_linked_items", JSON.stringify(existing));
+    } catch {}
+    showToast(`Entidade [${node.label}] vinculada com sucesso ao CASO-2026-001.`);
+  };
+
+  const handleExportGraphJson = () => {
+    const data = {
+      exportDate: new Date().toISOString(),
+      investigationCase: "CASO-2026-001",
+      nodesCount: nodes.length,
+      edgesCount: edges.length,
+      nodes,
+      edges,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `GRAFO_INTELIGENCIA_OSINT_${Date.now()}.json`;
+    a.click();
+    showToast("Grafo relacional exportado em formato JSON.");
   };
 
   const getNodeIcon = (type: OsintGraphNode["type"]) => {
@@ -85,8 +162,19 @@ export function OsintGraphWorkspace() {
 
   return (
     <div className="space-y-4">
+      {/* Toast */}
+      {toastMsg && (
+        <div className="p-3 bg-emerald-950/80 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center justify-between font-mono">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMsg}</span>
+          </div>
+          <button onClick={() => setToastMsg(null)} className="hover:text-white">✕</button>
+        </div>
+      )}
+
       {/* Header do Workspace do Grafo */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-xl">
         <div>
           <div className="flex items-center space-x-2">
             <Share2 className="w-5 h-5 text-amber-400" />
@@ -102,7 +190,18 @@ export function OsintGraphWorkspace() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Busca rápida */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filtrar nós..."
+              className="bg-slate-950 border border-slate-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500 font-mono w-32 sm:w-40"
+            />
+          </div>
+
           {/* Filtro por tipo de nó */}
           <select
             value={filterType}
@@ -119,11 +218,28 @@ export function OsintGraphWorkspace() {
           </select>
 
           <button
+            onClick={handleExportGraphJson}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-colors"
+            title="Exportar dados do grafo em JSON"
+          >
+            <FileDown className="w-3.5 h-3.5 text-amber-400" />
+            <span>Exportar JSON</span>
+          </button>
+
+          <button
+            onClick={() => setShowNewNodeModal(true)}
+            className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nova Entidade</span>
+          </button>
+
+          <button
             onClick={() => setShowNewRelModal(true)}
             className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Vincular Entidades</span>
+            <span>Vincular</span>
           </button>
         </div>
       </div>
@@ -198,24 +314,21 @@ export function OsintGraphWorkspace() {
                     className={`p-2 rounded-lg text-xs font-mono border flex items-center justify-between cursor-pointer transition-colors ${
                       isSelected
                         ? "bg-slate-900 border-amber-500"
-                        : "bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40"
+                        : "bg-slate-900/60 border-slate-800/80 hover:border-slate-700"
                     }`}
                   >
-                    <span className="text-slate-300 font-semibold truncate max-w-[140px]">
-                      {srcNode ? srcNode.label : edge.source}
-                    </span>
+                    <div className="flex items-center space-x-2 truncate">
+                      <span className="text-white font-bold">{srcNode?.label || edge.source}</span>
+                      <span className="text-amber-400 text-[10px] bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                        {edge.relation}
+                      </span>
+                      <span className="text-white font-bold">{tgtNode?.label || edge.target}</span>
+                    </div>
 
-                    <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold">
-                      ── {edge.relation} ──▶
-                    </span>
-
-                    <span className="text-slate-300 font-semibold truncate max-w-[140px]">
-                      {tgtNode ? tgtNode.label : edge.target}
-                    </span>
-
-                    <span className="text-[10px] text-emerald-400 font-bold">
-                      {(edge.confidence * 100).toFixed(0)}% Conf
-                    </span>
+                    <div className="flex items-center space-x-2 text-[10px] text-slate-400 shrink-0">
+                      <span>Conf: {(edge.confidence * 100).toFixed(0)}%</span>
+                      <span className="text-emerald-400">✓</span>
+                    </div>
                   </div>
                 );
               })}
@@ -223,81 +336,79 @@ export function OsintGraphWorkspace() {
           </div>
         </div>
 
-        {/* Inspector Lateral de Nós / Vínculos (1 Coluna) */}
-        <div className="space-y-4">
-          {/* Se nó selecionado */}
+        {/* Painel Lateral: Inspector de Nó / Aresta */}
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-xl">
+          <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
+            <Info className="w-4 h-4 text-amber-400" />
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              Inspector de Inteligência
+            </h4>
+          </div>
+
           {selectedNode && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="space-y-4 font-mono text-xs">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center space-x-2">
                   {getNodeIcon(selectedNode.type)}
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    Detalhes da Entidade
-                  </h4>
+                  <span className="text-white font-bold text-sm">{selectedNode.label}</span>
                 </div>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
-                  {selectedNode.type}
+                <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 inline-block">
+                  CATEGORIA: {selectedNode.type}
                 </span>
-              </div>
-
-              <div className="space-y-3 font-mono text-xs">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Nome da Entidade:</span>
-                  <span className="text-white text-sm font-bold">{selectedNode.label}</span>
-                </div>
-
                 {selectedNode.identifier && (
-                  <div>
-                    <span className="text-slate-500 text-[10px] block">Identificador Público:</span>
-                    <span className="text-amber-400 bg-slate-950 p-1.5 rounded border border-slate-800 block text-[11px] select-all">
-                      {selectedNode.identifier}
-                    </span>
+                  <div className="text-[11px] text-slate-300">
+                    <span className="text-slate-500 block text-[10px]">Identificador Cadastral:</span>
+                    {selectedNode.identifier}
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">
-                  <div>
-                    <span className="text-slate-500 block">Classificação:</span>
-                    <span className="text-slate-200">Fonte Pública Aberta</span>
+                {selectedNode.riskScore !== undefined && (
+                  <div className="text-[11px] text-slate-300">
+                    <span className="text-slate-500 block text-[10px]">Score de Risco Analítico:</span>
+                    <span className="text-rose-400 font-bold">{(selectedNode.riskScore * 100).toFixed(0)} / 100</span>
                   </div>
-                  <div>
-                    <span className="text-slate-500 block">Status Probatório:</span>
-                    <span className="text-emerald-400 font-bold">Auditado</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-400 space-y-1">
-                  <span className="text-amber-400 font-bold block">Conexões no Grafo:</span>
-                  <p>
-                    Esta entidade possui conexões ativas com outras entidades do caso.
-                  </p>
-                </div>
+                )}
               </div>
+
+              {/* Conexões do Nó */}
+              <div className="space-y-2">
+                <span className="text-[10px] text-slate-500 uppercase tracking-widest block">
+                  Vínculos Desta Entidade:
+                </span>
+                {edges.filter((e) => e.source === selectedNode.id || e.target === selectedNode.id).map((e) => {
+                  const otherNode = nodes.find((n) => n.id === (e.source === selectedNode.id ? e.target : e.source));
+                  return (
+                    <div key={e.id} className="p-2 bg-slate-950 rounded border border-slate-800 text-[11px] space-y-0.5">
+                      <div className="flex justify-between text-amber-400 font-bold">
+                        <span>{e.relation}</span>
+                        <span className="text-slate-400 text-[10px]">{(e.confidence * 100).toFixed(0)}%</span>
+                      </div>
+                      <span className="text-white block">{otherNode?.label}</span>
+                      <span className="text-[10px] text-slate-500 block">Fonte: {e.sourceName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Ação de Vinculação Direta ao Caso */}
+              <button
+                onClick={() => handleLinkNodeToCase(selectedNode)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 py-2 rounded-lg font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                <span>Vincular Entidade ao CASO-2026-001</span>
+              </button>
             </div>
           )}
 
-          {/* Se aresta selecionada */}
           {selectedEdge && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center space-x-2">
-                  <Share2 className="w-4 h-4 text-emerald-400" />
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                    Detalhes do Vínculo
-                  </h4>
-                </div>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
-                  {(selectedEdge.confidence * 100).toFixed(0)}% CONFIANÇA
+            <div className="space-y-4 font-mono text-xs">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                <span className="text-white font-bold block">Vínculo: {selectedEdge.relation}</span>
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 inline-block">
+                  CONFIANÇA: {(selectedEdge.confidence * 100).toFixed(0)}%
                 </span>
-              </div>
 
-              <div className="space-y-3 font-mono text-xs">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Tipo de Relação:</span>
-                  <span className="text-amber-400 font-bold text-sm">{selectedEdge.relation}</span>
-                </div>
-
-                <div>
+                <div className="pt-2 border-t border-slate-800 text-[11px]">
                   <span className="text-slate-500 text-[10px] block">Fonte de Origem:</span>
                   <span className="text-white">{selectedEdge.sourceName}</span>
                 </div>
@@ -324,6 +435,89 @@ export function OsintGraphWorkspace() {
           )}
         </div>
       </div>
+
+      {/* Modal: Nova Entidade */}
+      {showNewNodeModal && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white">Adicionar Entidade ao Grafo</h3>
+              <button onClick={() => setShowNewNodeModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateNode} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Nome / Rótulo da Entidade</label>
+                <input
+                  type="text"
+                  required
+                  value={newNodeLabel}
+                  onChange={(e) => setNewNodeLabel(e.target.value)}
+                  placeholder="Ex: Dr. Manuel V. ou 185.220.101.45"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">Tipo de Entidade</label>
+                <select
+                  value={newNodeType}
+                  onChange={(e) => setNewNodeType(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                >
+                  <option value="PESSOA">Pessoa</option>
+                  <option value="EMPRESA">Empresa</option>
+                  <option value="ORGANIZACAO">Organização</option>
+                  <option value="DOMINIO">Domínio</option>
+                  <option value="IP">Endereço IP</option>
+                  <option value="TELEFONE_PUBLICO">Telefone</option>
+                  <option value="DOCUMENTO">Documento</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">Identificador Público (NIF, IMEI, BGP, etc.)</label>
+                <input
+                  type="text"
+                  value={newNodeIdentifier}
+                  onChange={(e) => setNewNodeIdentifier(e.target.value)}
+                  placeholder="Ex: NIF 002918239LA041 ou AS9009"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1">Score de Risco Preliminar (0.0 a 1.0)</label>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0"
+                  max="1"
+                  value={newNodeRisk}
+                  onChange={(e) => setNewNodeRisk(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowNewNodeModal(false)}
+                  className="px-3 py-1.5 text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg"
+                >
+                  Criar Entidade
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Vincular Entidades Manualmente */}
       {showNewRelModal && (
@@ -399,7 +593,7 @@ export function OsintGraphWorkspace() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg cursor-pointer"
                 >
                   Salvar Relação
                 </button>

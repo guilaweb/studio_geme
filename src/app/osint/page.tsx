@@ -57,6 +57,8 @@ import { OsintTimeline } from "@/components/osint/osint-timeline";
 import { OsintCollectors } from "@/components/osint/osint-collectors";
 import { OsintPersonAnalyzer } from "@/components/osint/osint-person-analyzer";
 import { OsintSiAssistant } from "@/components/osint/osint-si-assistant";
+import { OsintIpAnalyzer } from "@/components/osint/osint-ip-analyzer";
+import { OsintCompanyAnalyzer } from "@/components/osint/osint-company-analyzer";
 
 export default function OsintPage() {
   const { user } = useAuth();
@@ -73,6 +75,8 @@ export default function OsintPage() {
     | "timeline"
     | "coletores"
     | "dominio-analyzer"
+    | "ip-analyzer"
+    | "empresa-analyzer"
     | "pessoa-analyzer"
     | "si-assistant"
   >("visao-geral");
@@ -446,6 +450,30 @@ export default function OsintPage() {
           >
             <Globe className="w-3.5 h-3.5" />
             <span>Reconhecimento de Domínio</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("ip-analyzer")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "ip-analyzer"
+                ? "bg-slate-900 text-purple-400 border-t-2 border-purple-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Server className="w-3.5 h-3.5" />
+            <span>Reconhecimento de IP & Redes</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("empresa-analyzer")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "empresa-analyzer"
+                ? "bg-slate-900 text-sky-400 border-t-2 border-sky-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Inteligência Societária (NIF)</span>
           </button>
 
           <button
@@ -1087,7 +1115,26 @@ export default function OsintPage() {
         )}
 
         {/* ============================================================ */}
-        {/* ABA 11: RECONHECIMENTO DE PESSOA ESPECÍFICA */}
+        {/* ABA 11: RECONHECIMENTO DE IP & REDES */}
+        {/* ============================================================ */}
+        {activeTab === "ip-analyzer" && (
+          <OsintIpAnalyzer
+            initialIp="185.220.101.45"
+            onSaveAsEvidence={(ip) => showToast(`Snapshot probatório de ${ip} arquivado com sucesso.`)}
+          />
+        )}
+
+        {/* ============================================================ */}
+        {/* ABA 12: INTELIGÊNCIA SOCIETÁRIA (NIF & DIÁRIO DA REPÚBLICA) */}
+        {/* ============================================================ */}
+        {activeTab === "empresa-analyzer" && (
+          <OsintCompanyAnalyzer
+            onSaveAsEvidence={(comp) => showToast(`Pacto societário de ${comp} arquivado no Cofre Probatório.`)}
+          />
+        )}
+
+        {/* ============================================================ */}
+        {/* ABA 13: RECONHECIMENTO DE PESSOA ESPECÍFICA */}
         {/* ============================================================ */}
         {activeTab === "pessoa-analyzer" && (
           <OsintPersonAnalyzer />
