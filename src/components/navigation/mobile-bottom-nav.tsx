@@ -13,7 +13,8 @@ import {
   BookOpen,
   Ruler,
   Fingerprint,
-  Share2
+  Share2,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -183,23 +184,7 @@ export function MobileBottomNav() {
             /* NAVEGAÇÃO GERAL FORA DO PROJETO: Início | Projetos | (+) | Alertas | Mais */
             /* ============================================================ */
             <>
-              {/* 1. Início */}
-              <Link
-                href="/dashboard"
-                className={cn(
-                  'flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-colors touch-target-44 active:scale-95',
-                  isHomeActive
-                    ? 'text-primary font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <div className={cn('p-1 rounded-xl transition-all', isHomeActive && 'bg-primary/10')}>
-                  <LayoutDashboard className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] mt-0.5 tracking-tight">Início</span>
-              </Link>
-
-              {/* 2. Casos */}
+              {/* 1. Casos & Dossiês */}
               <Link
                 href="/investigacao"
                 className={cn(
@@ -215,33 +200,60 @@ export function MobileBottomNav() {
                 <span className="text-[10px] mt-0.5 tracking-tight">Casos</span>
               </Link>
 
+              {/* 2. Perícia Móvel */}
+              <Link
+                href="/pericia-movel"
+                className={cn(
+                  'flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-colors touch-target-44 active:scale-95',
+                  pathname === '/pericia-movel'
+                    ? 'text-amber-400 font-bold'
+                    : 'text-muted-foreground hover:text-amber-300'
+                )}
+              >
+                <div className={cn('p-1 rounded-xl transition-all', pathname === '/pericia-movel' && 'bg-amber-500/10 text-amber-400')}>
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] mt-0.5 tracking-tight">Perícia</span>
+              </Link>
+
               {/* 3. Central FAB Button (+) */}
               <div className="flex items-center justify-center flex-1 -mt-5">
                 <button
                   type="button"
                   onClick={() => setIsQuickActionOpen(true)}
                   aria-label="Ação Rápida de Campo"
-                  className="h-13 w-13 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-90 transition-transform border-4 border-background focus:outline-hidden touch-target-44"
+                  className="h-13 w-13 rounded-full bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 flex items-center justify-center active:scale-90 transition-transform border-4 border-background focus:outline-hidden touch-target-44 font-bold"
                 >
                   <Plus className="h-6 w-6 stroke-[2.5]" />
                 </button>
               </div>
 
-              {/* 4. Notificações / Alertas */}
+              {/* 4. Custódia SHA-256 */}
+              <Link
+                href="/investigacao#custodia"
+                className={cn(
+                  'flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-colors touch-target-44 active:scale-95',
+                  pathname.includes('#custodia')
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <div className={cn('p-1 rounded-xl transition-all', pathname.includes('#custodia') && 'bg-emerald-500/10 text-emerald-400')}>
+                  <Fingerprint className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] mt-0.5 tracking-tight">Custódia</span>
+              </Link>
+
+              {/* 5. Mais (Drawer) */}
               <button
                 type="button"
-                onClick={() => setIsNotificationsOpen(true)}
-                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-center text-muted-foreground hover:text-foreground transition-colors touch-target-44 active:scale-95 relative"
+                onClick={() => setIsNavDrawerOpen(true)}
+                className="flex flex-col items-center justify-center flex-1 h-full py-1 text-center text-muted-foreground hover:text-foreground transition-colors touch-target-44 active:scale-95"
               >
-                <div className="p-1 rounded-xl relative">
-                  <Bell className="h-5 w-5" />
-                  {liveUnreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[1rem] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-extrabold flex items-center justify-center border-2 border-background">
-                      {liveUnreadCount > 9 ? '9+' : liveUnreadCount}
-                    </span>
-                  )}
+                <div className="p-1 rounded-xl">
+                  <Menu className="h-5 w-5" />
                 </div>
-                <span className="text-[10px] mt-0.5 tracking-tight">Alertas</span>
+                <span className="text-[10px] mt-0.5 tracking-tight">Mais</span>
               </button>
 
               {/* 5. Mais (Drawer) */}

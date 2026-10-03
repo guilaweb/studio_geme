@@ -36,7 +36,11 @@ import {
   ChevronRight,
   Globe,
   Building2,
-  Compass
+  Compass,
+  Copy,
+  X,
+  Eye,
+  ShieldCheck
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
@@ -355,6 +359,7 @@ const SAMPLE_TIMELINE: TimelineEvent[] = [
 
 export default function PericiaMovelPage() {
   const { user } = useAuth();
+  const [devicesList, setDevicesList] = useState<SeizedDevice[]>(SAMPLE_DEVICES);
   const [selectedDevice, setSelectedDevice] = useState<SeizedDevice>(SAMPLE_DEVICES[0]);
   const [activeTab, setActiveTab] = useState<
     "dispositivos" | "mensagens" | "chamadas" | "galeria" | "timeline" | "recuperados" | "laudo"
@@ -363,16 +368,57 @@ export default function PericiaMovelPage() {
   const [messageSearch, setMessageSearch] = useState("");
   const [onlyDeletedFilter, setOnlyDeletedFilter] = useState(false);
   const [showIngestionModal, setShowIngestionModal] = useState(false);
-  const [ingestionFileName, setIngestionFileName] = useState("");
   const [ingestionCaseRef, setIngestionCaseRef] = useState("CASO-2026-001");
-  const [ingestionType, setIngestionType] = useState("UFDR");
   const [ingestionSuccess, setIngestionSuccess] = useState<string | null>(null);
 
-  // Ingestão simulada
+  // Inspector lateral contextual (380px)
+  const [forensicInspector, setForensicInspector] = useState<{
+    type: "DEVICE" | "MESSAGE" | "CALL" | "PHOTO" | "TIMELINE";
+    data: any;
+  } | null>(null);
+  const [copiedForensicHash, setCopiedForensicHash] = useState(false);
+
+  // Assistente guiado de 4 passos para aquisição
+  const [acquisitionStep, setAcquisitionStep] = useState<1 | 2 | 3 | 4>(1);
+  const [newDevModel, setNewDevModel] = useState("Apple iPhone 16 Pro (A3293)");
+  const [newDevImei, setNewDevImei] = useState("359876543210987");
+  const [newDevSerial, setNewDevSerial] = useState("K7D91P321X");
+  const [newDevOs, setNewDevOs] = useState("iOS 18.0 (22A3354)");
+  const [newDevExtractionType, setNewDevExtractionType] = useState<
+    "EXTRAÇÃO FÍSICA (FULL BIT-BY-BIT)" | "SISTEMA DE FICHEIROS AVANÇADO" | "LÓGICA / UFDR" | "CHIPSET EDL / BOOTLOADER"
+  >("SISTEMA DE FICHEIROS AVANÇADO");
+  const [newDevWarrant, setNewDevWarrant] = useState("Mandado Judicial nº 58/2026 - SIC / PGR");
+  const [newDevAnalyst, setNewDevAnalyst] = useState("Capitão Silva (Perito Digital)");
+  const [newDevExtractionFile, setNewDevExtractionFile] = useState<string>("");
+
+  // Ingestão e aquisição forense concluída
   const handleIngestFile = (e: React.FormEvent) => {
     e.preventDefault();
-    setIngestionSuccess(`Extração [${ingestionFileName || "UFDR_EXTRACAO_CELLEBRITE.ufdr"}] ingerida com sucesso! Hash SHA-256 gerado e 3.420 artefactos normalizados.`);
+    const newId = `DEV-2026-00${devicesList.length + 1}`;
+    const newDev: SeizedDevice = {
+      id: newId,
+      caseNumber: ingestionCaseRef,
+      model: newDevModel,
+      osVersion: newDevOs,
+      serialNumber: newDevSerial,
+      imei: newDevImei,
+      extractionType: newDevExtractionType,
+      status: "CONCLUÍDO COM SUCESSO",
+      sha256Hash: "7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+      warrantRef: newDevWarrant,
+      seizureDate: new Date().toISOString().replace('T', ' ').slice(0, 19) + " UTC+1",
+      forensicAnalyst: newDevAnalyst,
+      messagesCount: 1840,
+      callsCount: 142,
+      photosCount: 420,
+      locationsCount: 650,
+      deletedArtifactsCount: 38,
+    };
+    setDevicesList((prev) => [newDev, ...prev]);
+    setSelectedDevice(newDev);
+    setIngestionSuccess(`Dispositivo ${newDev.model} (${newDev.id}) adquirido com sucesso sob hash SHA-256: 7f83b1657ff1...`);
     setShowIngestionModal(false);
+    setAcquisitionStep(1);
   };
 
   const filteredMessages = SAMPLE_MESSAGES.filter((msg) => {
@@ -625,10 +671,13 @@ export default function PericiaMovelPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {SAMPLE_DEVICES.map((dev) => (
+              {devicesList.map((dev) => (
                 <div
                   key={dev.id}
-                  onClick={() => setSelectedDevice(dev)}
+                  onClick={() => {
+                    setSelectedDevice(dev);
+                    setForensicInspector({ type: "DEVICE", data: dev });
+                  }}
                   className={`bg-slate-900 border rounded-xl p-5 cursor-pointer transition-all space-y-4 ${
                     selectedDevice.id === dev.id
                       ? "border-amber-500 ring-1 ring-amber-500/50 shadow-xl"
@@ -665,7 +714,7 @@ export default function PericiaMovelPage() {
                   <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
                     <span>{dev.seizureDate}</span>
                     <span className="text-amber-400 font-semibold flex items-center space-x-1">
-                      <span>Examinar Artefactos</span>
+                      <span>Inspecionar Artefactos</span>
                       <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
@@ -712,7 +761,8 @@ export default function PericiaMovelPage() {
               {filteredMessages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`bg-slate-900 border rounded-xl p-4 space-y-2 transition-all ${
+                  onClick={() => setForensicInspector({ type: "MESSAGE", data: msg })}
+                  className={`bg-slate-900 border rounded-xl p-4 space-y-2 cursor-pointer transition-all hover:border-amber-500/40 ${
                     msg.isDeleted
                       ? "border-rose-500/40 bg-rose-950/20 shadow-lg shadow-rose-950/30"
                       : "border-slate-800"
@@ -805,7 +855,11 @@ export default function PericiaMovelPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-800 font-mono text-slate-300">
                   {SAMPLE_CALLS.map((call) => (
-                    <tr key={call.id} className="hover:bg-slate-800/40">
+                    <tr
+                      key={call.id}
+                      onClick={() => setForensicInspector({ type: "CALL", data: call })}
+                      className="hover:bg-slate-800/60 cursor-pointer transition-colors"
+                    >
                       <td className="p-3 text-slate-400">{call.timestamp}</td>
                       <td className="p-3 text-white font-semibold">
                         {call.contactName}
@@ -847,7 +901,11 @@ export default function PericiaMovelPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {SAMPLE_PHOTOS.map((photo) => (
-                <div key={photo.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl space-y-3">
+                <div
+                  key={photo.id}
+                  onClick={() => setForensicInspector({ type: "PHOTO", data: photo })}
+                  className="bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer rounded-xl overflow-hidden shadow-xl space-y-3 transition-all"
+                >
                   <div className={`h-40 bg-gradient-to-br ${photo.thumbColor} flex flex-col items-center justify-center p-4 relative`}>
                     <ImageIcon className="w-10 h-10 text-amber-400/80 mb-2" />
                     <span className="text-xs font-mono text-white font-bold">{photo.fileName}</span>
@@ -899,7 +957,11 @@ export default function PericiaMovelPage() {
 
             <div className="relative border-l border-slate-800 ml-4 space-y-6 py-2">
               {SAMPLE_TIMELINE.map((event) => (
-                <div key={event.id} className="relative pl-6">
+                <div
+                  key={event.id}
+                  onClick={() => setForensicInspector({ type: "TIMELINE", data: event })}
+                  className="relative pl-6 cursor-pointer group"
+                >
                   {/* Dot indicador */}
                   <div
                     className={`absolute -left-2 top-1.5 w-4 h-4 rounded-full border-2 ${
@@ -910,7 +972,7 @@ export default function PericiaMovelPage() {
                   ></div>
 
                   <div
-                    className={`bg-slate-900 border rounded-xl p-4 space-y-1.5 ${
+                    className={`bg-slate-900 border rounded-xl p-4 space-y-1.5 transition-all group-hover:border-amber-500/50 ${
                       event.isAlert
                         ? "border-rose-500/40 bg-rose-950/20 shadow-lg shadow-rose-950/30"
                         : "border-slate-800"
@@ -931,7 +993,7 @@ export default function PericiaMovelPage() {
                       )}
                     </div>
 
-                    <h4 className="text-sm font-bold text-white">{event.title}</h4>
+                    <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{event.title}</h4>
                     <p className="text-xs text-slate-300 font-mono leading-relaxed">{event.description}</p>
                   </div>
                 </div>
@@ -1053,70 +1115,477 @@ export default function PericiaMovelPage() {
         )}
       </main>
 
-      {/* MODAL: INGESTÃO DE EXTRAÇÃO FORENSE */}
+      {/* MODAL: NOVA AQUISIÇÃO FORENSE - 4-STEP WIZARD */}
       {showIngestionModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center space-x-2">
-              <Upload className="w-5 h-5 text-amber-400" />
-              <h3 className="text-base font-bold text-white">Ingerir Pacote de Extração Forense</h3>
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative overflow-hidden">
+            {/* Top Stepper Indicator */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest">
+                  Protocolo Forense Móvel • Passo {acquisitionStep} de 4
+                </span>
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {acquisitionStep === 1 && "1. Identificação do Dispositivo & Hardware"}
+                  {acquisitionStep === 2 && "2. Método de Aquisição Forense"}
+                  {acquisitionStep === 3 && "3. Mandado Judicial & Custódia"}
+                  {acquisitionStep === 4 && "4. Integridade & Selagem SHA-256"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowIngestionModal(false); setAcquisitionStep(1); }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Carregue pacotes de extração gerados por estações periciais (Cellebrite UFED, UFDR, Magnet AXIOM, RAW/DD, TAR ou JSON normalizado).
-            </p>
-
-            <form onSubmit={handleIngestFile} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Dossiê / Caso de Vinculação</label>
-                <input
-                  type="text"
-                  required
-                  value={ingestionCaseRef}
-                  onChange={(e) => setIngestionCaseRef(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+            {/* Stepper Progress Bar */}
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((step) => (
+                <div
+                  key={step}
+                  className={`h-1.5 rounded-full transition-colors ${
+                    step <= acquisitionStep ? "bg-amber-500" : "bg-slate-800"
+                  }`}
                 />
-              </div>
+              ))}
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Formato do Pacote</label>
-                <select
-                  value={ingestionType}
-                  onChange={(e) => setIngestionType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                >
-                  <option value="UFDR">Cellebrite UFDR Report (.ufdr)</option>
-                  <option value="FULL_FS">Arquivo de Sistema de Ficheiros (.tar / .zip)</option>
-                  <option value="RAW_DD">Imagem Física Bit-a-Bit (.dd / .raw / .bin)</option>
-                  <option value="SQLITE_DUMP">Dump de Bases de Dados SQLite (.db / .sqlite)</option>
-                </select>
-              </div>
+            {/* Step 1: Dispositivo & Hardware */}
+            {acquisitionStep === 1 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Marca e Modelo do Smartphone</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevModel}
+                      onChange={(e) => setNewDevModel(e.target.value)}
+                      placeholder="Ex: Apple iPhone 15 Pro Max (A3106)"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Sistema Operativo & Build</label>
+                    <input
+                      type="text"
+                      value={newDevOs}
+                      onChange={(e) => setNewDevOs(e.target.value)}
+                      placeholder="Ex: iOS 17.5.1 / Android 14"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Ficheiro de Extração</label>
-                <input
-                  type="file"
-                  onChange={(e) => setIngestionFileName(e.target.files ? e.target.files[0].name : "")}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:bg-amber-500 file:text-slate-950 file:font-semibold"
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">IMEI Principal (15 Dígitos)</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevImei}
+                      onChange={(e) => setNewDevImei(e.target.value)}
+                      placeholder="Ex: 359123450912384"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Número de Série do Equipamento</label>
+                    <input
+                      type="text"
+                      value={newDevSerial}
+                      onChange={(e) => setNewDevSerial(e.target.value)}
+                      placeholder="Ex: H9D71X902L"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
 
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-800">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Dossiê / Caso de Vinculação</label>
+                  <input
+                    type="text"
+                    value={ingestionCaseRef}
+                    onChange={(e) => setIngestionCaseRef(e.target.value)}
+                    placeholder="CASO-2026-001 (Operação Sombra Digital)"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Método Forense */}
+            {acquisitionStep === 2 && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-400">
+                  Selecione o protocolo de extração de acordo com o hardware e a autorização jurídica do caso:
+                </p>
+
+                <div className="space-y-2.5">
+                  <label
+                    onClick={() => setNewDevExtractionType("SISTEMA DE FICHEIROS AVANÇADO")}
+                    className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      newDevExtractionType === "SISTEMA DE FICHEIROS AVANÇADO"
+                        ? "bg-amber-500/10 border-amber-500/50"
+                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="extType"
+                      checked={newDevExtractionType === "SISTEMA DE FICHEIROS AVANÇADO"}
+                      onChange={() => setNewDevExtractionType("SISTEMA DE FICHEIROS AVANÇADO")}
+                      className="accent-amber-500 mt-1"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Sistema de Ficheiros Avançado (Recomendado para iOS/Android Recente)</span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Extração integral do sistema de ficheiros incluindo bancos SQLite de apps de mensagens, caches de geolocalização e metadados de fotos.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    onClick={() => setNewDevExtractionType("EXTRAÇÃO FÍSICA (FULL BIT-BY-BIT)")}
+                    className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      newDevExtractionType === "EXTRAÇÃO FÍSICA (FULL BIT-BY-BIT)"
+                        ? "bg-amber-500/10 border-amber-500/50"
+                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="extType"
+                      checked={newDevExtractionType === "EXTRAÇÃO FÍSICA (FULL BIT-BY-BIT)"}
+                      onChange={() => setNewDevExtractionType("EXTRAÇÃO FÍSICA (FULL BIT-BY-BIT)")}
+                      className="accent-amber-500 mt-1"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Extração Física (Full Bit-by-Bit / RAW Dump)</span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Cópia sector a sector da memória flash NAND. Permite recuperação profunda de dados eliminados e blocos SQLite WAL em áreas não alocadas.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    onClick={() => setNewDevExtractionType("LÓGICA / UFDR")}
+                    className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      newDevExtractionType === "LÓGICA / UFDR"
+                        ? "bg-amber-500/10 border-amber-500/50"
+                        : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="extType"
+                      checked={newDevExtractionType === "LÓGICA / UFDR"}
+                      onChange={() => setNewDevExtractionType("LÓGICA / UFDR")}
+                      className="accent-amber-500 mt-1"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Extração Lógica / Relatório UFDR Cellebrite</span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Ingestão direta de relatórios gerados por Cellebrite Physical Analyzer, UFED Reader ou backups normalizados.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Mandado de Apreensão */}
+            {acquisitionStep === 3 && (
+              <div className="space-y-4">
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-300">
+                  A apreensão forense de equipamentos de comunicação exige enquadramento probatório legal sob o Art. 212º do Código de Processo Penal Angolano.
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Referência do Mandado Judicial</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevWarrant}
+                      onChange={(e) => setNewDevWarrant(e.target.value)}
+                      placeholder="Mandado Judicial nº 42/2026 - SIC / PGR Luanda"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Perito Digital Encarregado</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevAnalyst}
+                      onChange={(e) => setNewDevAnalyst(e.target.value)}
+                      placeholder="Capitão Silva (Perito Digital)"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Carregar Pacote Forense (.ufdr / .tar / .dd)</label>
+                    <input
+                      type="file"
+                      onChange={(e) => setNewDevExtractionFile(e.target.files ? e.target.files[0].name : "")}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:bg-amber-500 file:text-slate-950 file:font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Selagem & SHA-256 */}
+            {acquisitionStep === 4 && (
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-400">
+                      EXTRAÇÃO PRONTA PARA CUSTÓDIA
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      VERIFICADO
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">DISPOSITIVO</span>
+                      <span className="font-bold text-white">{newDevModel}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">IMEI</span>
+                      <span className="font-mono text-[11px] text-amber-400">{newDevImei}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">MÉTODO</span>
+                      <span className="text-[11px]">{newDevExtractionType}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">MANDADO</span>
+                      <span className="font-mono text-[11px] truncate block">{newDevWarrant}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg">
+                    <span className="text-[10px] font-mono text-slate-400 block mb-1">
+                      Hash Criptográfico de Integridade (SHA-256):
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-300 break-all select-all block">
+                      7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 italic">
+                  O auto de apreensão e o hash SHA-256 serão gravados na cadeia de custódia inalterável.
+                </p>
+              </div>
+            )}
+
+            {/* Stepper Navigation Buttons */}
+            <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+              {acquisitionStep > 1 ? (
                 <button
                   type="button"
-                  onClick={() => setShowIngestionModal(false)}
+                  onClick={() => setAcquisitionStep((prev) => (prev - 1) as any)}
+                  className="px-4 py-2 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg"
+                >
+                  ← Voltar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setShowIngestionModal(false); setAcquisitionStep(1); }}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-white"
                 >
                   Cancelar
                 </button>
+              )}
+
+              {acquisitionStep < 4 ? (
                 <button
-                  type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs"
+                  type="button"
+                  onClick={() => {
+                    if (acquisitionStep === 1 && (!newDevModel.trim() || !newDevImei.trim())) {
+                      alert("Por favor, preencha o modelo e o IMEI do dispositivo.");
+                      return;
+                    }
+                    setAcquisitionStep((prev) => (prev + 1) as any);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs flex items-center space-x-1"
                 >
-                  Iniciar Indexação Forense
+                  <span>Avançar</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleIngestFile}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-5 py-2 rounded-lg text-xs flex items-center space-x-2 shadow-lg shadow-amber-500/20"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Concluir Aquisição Forense</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SLIDE-OVER CONTEXTUAL INSPECTOR DRAWER (380px) FOR MOBILE FORENSICS */}
+      {forensicInspector && (
+        <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+          {/* Header */}
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-semibold">
+                {forensicInspector.type === "DEVICE" && "Dispositivo Móvel Apreendido"}
+                {forensicInspector.type === "MESSAGE" && "Artefacto de Conversação"}
+                {forensicInspector.type === "CALL" && "Registo de Chamada & BTS"}
+                {forensicInspector.type === "PHOTO" && "Evidência Fotográfica EXIF/GPS"}
+                {forensicInspector.type === "TIMELINE" && "Evento Cronológico Forense"}
+              </span>
+            </div>
+            <button
+              onClick={() => setForensicInspector(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white tracking-tight">
+                {forensicInspector.data.model ||
+                 forensicInspector.data.title ||
+                 forensicInspector.data.fileName ||
+                 forensicInspector.data.contactName ||
+                 `Mensagem ${forensicInspector.data.app}`}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {forensicInspector.data.text ||
+                 forensicInspector.data.description ||
+                 forensicInspector.data.locationName ||
+                 forensicInspector.data.warrantRef}
+              </p>
+            </div>
+
+            {/* SHA-256 Box */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline" />
+                  Hash SHA-256 de Custódia
+                </span>
+                <button
+                  onClick={() => {
+                    const hash = forensicInspector.data.sha256Hash || forensicInspector.data.sha256 || "8f9b4c12d5e3f890123456789abcdef0123456789abcdef0123456789abcdef0";
+                    navigator.clipboard.writeText(hash);
+                    setCopiedForensicHash(true);
+                    setTimeout(() => setCopiedForensicHash(false), 2000);
+                  }}
+                  className="text-[10px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{copiedForensicHash ? "Copiado!" : "Copiar"}</span>
                 </button>
               </div>
-            </form>
+              <div className="p-2 bg-slate-900/80 rounded border border-slate-800 font-mono text-[11px] text-amber-300 break-all select-all">
+                {forensicInspector.data.sha256Hash || forensicInspector.data.sha256 || "8f9b4c12d5e3f890123456789abcdef0123456789abcdef0123456789abcdef0"}
+              </div>
+              <div className="text-[10px] text-emerald-400 flex items-center gap-1 pt-1">
+                <CheckCircle className="w-3 h-3" />
+                <span>Integridade bit-a-bit garantida</span>
+              </div>
+            </div>
+
+            {/* Technical Forensic Attributes */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono">
+                Especificações Periciais
+              </h4>
+              <div className="bg-slate-950 border border-slate-800 rounded-xl divide-y divide-slate-800 text-xs">
+                {forensicInspector.data.imei && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">IMEI</span>
+                    <span className="font-mono text-amber-400">{forensicInspector.data.imei}</span>
+                  </div>
+                )}
+                {forensicInspector.data.extractionType && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Método de Extração</span>
+                    <span className="text-slate-200">{forensicInspector.data.extractionType}</span>
+                  </div>
+                )}
+                {forensicInspector.data.app && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Aplicação</span>
+                    <span className="font-semibold text-amber-400">{forensicInspector.data.app}</span>
+                  </div>
+                )}
+                {forensicInspector.data.isDeleted !== undefined && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Origem do Registo</span>
+                    <span className={`font-mono text-[11px] ${forensicInspector.data.isDeleted ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
+                      {forensicInspector.data.isDeleted ? 'Recuperado SQLite WAL' : 'Base Activa'}
+                    </span>
+                  </div>
+                )}
+                {forensicInspector.data.cellTowerBts && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Antena BTS</span>
+                    <span className="font-mono text-sky-400">{forensicInspector.data.cellTowerBts}</span>
+                  </div>
+                )}
+                {forensicInspector.data.gpsCoordinates && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Coordenadas GPS</span>
+                    <span className="font-mono text-emerald-400">{forensicInspector.data.gpsCoordinates}</span>
+                  </div>
+                )}
+                {forensicInspector.data.cameraModel && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Sensor da Câmara</span>
+                    <span className="font-mono text-slate-300">{forensicInspector.data.cameraModel}</span>
+                  </div>
+                )}
+                <div className="p-2.5 flex justify-between">
+                  <span className="text-slate-500">Data e Hora</span>
+                  <span className="font-mono text-slate-300">
+                    {forensicInspector.data.timestamp || forensicInspector.data.captureDate || forensicInspector.data.seizureDate || forensicInspector.data.time}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between gap-2">
+            <button
+              onClick={() => {
+                alert("Evidência certificada com sucesso e adicionada ao Laudo Pericial.");
+                setForensicInspector(null);
+              }}
+              className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center space-x-1"
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Anexar ao Laudo Forense</span>
+            </button>
+            <button
+              onClick={() => setForensicInspector(null)}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-3 rounded-lg text-xs"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}

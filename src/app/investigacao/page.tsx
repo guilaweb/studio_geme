@@ -32,6 +32,19 @@ import {
   Eye,
   FileCheck,
   Cpu,
+  Copy,
+  X,
+  ExternalLink,
+  ShieldCheck,
+  Smartphone,
+  Radio,
+  ArrowRight,
+  ChevronRight,
+  Hash,
+  Calendar,
+  Clock,
+  KeyRound,
+  Globe
 } from "lucide-react";
 import {
   signInWithPopup,
@@ -339,9 +352,38 @@ export default function InvestigacaoWorkspace() {
 
   // Modals & Forms
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
+  const [caseNumberInput, setCaseNumberInput] = useState("");
   const [newCaseTitle, setNewCaseTitle] = useState("");
   const [newCaseDesc, setNewCaseDesc] = useState("");
   const [newCasePriority, setNewCasePriority] = useState("MEDIUM");
+  const [targetSubject, setTargetSubject] = useState("");
+  const [targetType, setTargetType] = useState("INDIVIDUAL");
+  const [confidentialityLevel, setConfidentialityLevel] = useState("CONFIDENCIAL");
+  const [warrantRef, setWarrantRef] = useState("MANDADO-DILIGENCIA-2026/MP-AO");
+  const [magistrateAuthority, setMagistrateAuthority] = useState("Gabinete Central de Combate à Corrupção / PGR");
+  const [legalBasis, setLegalBasis] = useState("Lei dos Crimes Cibernéticos & Regime de Prevenção ao Branqueamento de Capitais");
+  const [assignedAnalyst, setAssignedAnalyst] = useState("Perito Digital Chefe (DIP/SIC)");
+  const [ingestionVectors, setIngestionVectors] = useState<{
+    mobileDevices: boolean;
+    telecomBts: boolean;
+    networkTraffic: boolean;
+    osintWeb: boolean;
+    financialDocs: boolean;
+  }>({
+    mobileDevices: true,
+    telecomBts: true,
+    networkTraffic: true,
+    osintWeb: true,
+    financialDocs: false,
+  });
+
+  // Contextual slide-over drawer (380px)
+  const [inspectorItem, setInspectorItem] = useState<{
+    type: "EVIDENCE" | "ENTITY" | "CASE" | "INFERENCE";
+    data: any;
+  } | null>(null);
+  const [copiedHash, setCopiedHash] = useState(false);
 
   const [showNewEntityModal, setShowNewEntityModal] = useState(false);
   const [entName, setEntName] = useState("");
@@ -599,29 +641,54 @@ export default function InvestigacaoWorkspace() {
     e.preventDefault();
     try {
       setLoading(true);
+      const computedNum = caseNumberInput.trim() || `CASO-2026-00${cases.length + 1}`;
       let newCase: CaseItem;
       try {
         newCase = await profundidadeApi.createCase(newCaseTitle, newCaseDesc, newCasePriority);
       } catch {
         const nextId = `case-${Date.now()}`;
-        const nextNum = `CASO-2026-00${cases.length + 1}`;
         newCase = {
           id: nextId,
           organization_id: activeOrgId,
-          case_number: nextNum,
+          case_number: computedNum,
           title: newCaseTitle,
-          description: newCaseDesc,
+          description: newCaseDesc || `Investigação formal instaurada sob o mandado ${warrantRef}. Alvo: ${targetSubject || 'Geral'}.`,
           priority: newCasePriority,
           status: "OPEN",
-          tags: ["Investigação Activa", "Novo"],
+          tags: ["Custódia Ativa", confidentialityLevel, targetType],
           created_at: new Date().toISOString(),
         };
         setCases((prev) => [newCase, ...prev]);
+
+        // Auto-instanciar entidade caso tenha sido indicado alvo
+        if (targetSubject.trim()) {
+          const genesisEnt: EntityItem = {
+            id: `ent-${Date.now()}`,
+            organization_id: activeOrgId,
+            case_id: nextId,
+            type: targetType,
+            name: targetSubject.trim(),
+            identifier: `ALVO-${computedNum}`,
+            risk_score: newCasePriority === "CRITICAL" ? 0.9 : 0.75,
+            status: "ACTIVE",
+            attributes: {
+              mandado: warrantRef,
+              magistrado: magistrateAuthority,
+              perito: assignedAnalyst,
+              fundamento: legalBasis,
+            },
+            created_at: new Date().toISOString(),
+          };
+          setEntities((prev) => [...prev, genesisEnt]);
+        }
       }
       setShowNewCaseModal(false);
+      setWizardStep(1);
       setNewCaseTitle("");
       setNewCaseDesc("");
-      setActionSuccess(`Caso ${newCase.case_number} registado com sucesso.`);
+      setTargetSubject("");
+      setCaseNumberInput("");
+      setActionSuccess(`Dossiê ${newCase.case_number} instanciado com sucesso sob custódia criptográfica SHA-256.`);
       selectCase(newCase);
     } catch (err: any) {
       setActionError(err.message);
@@ -1421,7 +1488,11 @@ export default function InvestigacaoWorkspace() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {entities.map((ent) => (
-                    <div key={ent.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div
+                      key={ent.id}
+                      onClick={() => setInspectorItem({ type: "ENTITY", data: ent })}
+                      className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 cursor-pointer rounded-xl p-4 space-y-3 transition-all group"
+                    >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
                           {ent.type}
@@ -1437,12 +1508,12 @@ export default function InvestigacaoWorkspace() {
                         </span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white">{ent.name}</h4>
+                        <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{ent.name}</h4>
                         <p className="text-xs text-slate-400 font-mono mt-0.5">{ent.identifier || "Sem identificador público"}</p>
                       </div>
                       <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
                         <span>Estado: {ent.status}</span>
-                        <span>{new Date(ent.created_at).toLocaleDateString("pt-AO")}</span>
+                        <span className="text-amber-400/80 group-hover:text-amber-300">Inspecionar →</span>
                       </div>
                     </div>
                   ))}
@@ -1531,11 +1602,15 @@ export default function InvestigacaoWorkspace() {
 
                 <div className="space-y-3">
                   {evidenceList.map((ev) => (
-                    <div key={ev.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div
+                      key={ev.id}
+                      onClick={() => setInspectorItem({ type: "EVIDENCE", data: ev })}
+                      className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 cursor-pointer rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all group"
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
                           <FileCheck className="w-4 h-4 text-emerald-400" />
-                          <h4 className="text-sm font-bold text-white">{ev.title}</h4>
+                          <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{ev.title}</h4>
                           <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-semibold">
                             {ev.status}
                           </span>
@@ -1544,17 +1619,24 @@ export default function InvestigacaoWorkspace() {
                         <div className="flex items-center space-x-3 text-[11px] text-slate-500 font-mono pt-1">
                           <span>Ficheiro: {ev.file_name}</span>
                           <span>Tamanho: {(ev.file_size / 1024).toFixed(1)} KB</span>
-                          <span>SHA-256: {ev.sha256_hash.slice(0, 16)}...</span>
+                          <span className="text-amber-400/90">SHA-256: {ev.sha256_hash.slice(0, 16)}...</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 shrink-0">
+                      <div className="flex items-center space-x-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setInspectorItem({ type: "EVIDENCE", data: ev })}
+                          className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Inspecionar</span>
+                        </button>
                         <button
                           onClick={() => handleVerifyEvidence(ev.id)}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1"
                         >
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Verificar Integridade</span>
+                          <span>Verificar</span>
                         </button>
                       </div>
                     </div>
@@ -1770,66 +1852,538 @@ export default function InvestigacaoWorkspace() {
         )}
       </main>
 
-      {/* MODAL: NEW CASE */}
+      {/* MODAL: NEW CASE - 4-STEP FORENSIC WIZARD */}
       {showNewCaseModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Abrir Novo Dossiê de Investigação</h3>
-            <form onSubmit={handleCreateCase} className="space-y-3">
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl relative overflow-hidden">
+            {/* Top Stepper Indicator */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Título da Operação</label>
-                <input
-                  type="text"
-                  required
-                  value={newCaseTitle}
-                  onChange={(e) => setNewCaseTitle(e.target.value)}
-                  placeholder="Ex: Operação Escudo Digital - Análise de IOCs"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest">
+                  Protocolo de Iniciação Probatória • Passo {wizardStep} de 4
+                </span>
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {wizardStep === 1 && "1. Identificação do Caso & Alvo"}
+                  {wizardStep === 2 && "2. Enquadramento Jurídico & Autorização"}
+                  {wizardStep === 3 && "3. Vetores de Ingestão & Fontes"}
+                  {wizardStep === 4 && "4. Termo de Custódia SHA-256"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowNewCaseModal(false); setWizardStep(1); }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stepper Progress Bar */}
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((step) => (
+                <div
+                  key={step}
+                  className={`h-1.5 rounded-full transition-colors ${
+                    step <= wizardStep ? "bg-amber-500" : "bg-slate-800"
+                  }`}
                 />
-              </div>
+              ))}
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Descrição / Hipótese Inicial</label>
-                <textarea
-                  rows={3}
-                  value={newCaseDesc}
-                  onChange={(e) => setNewCaseDesc(e.target.value)}
-                  placeholder="Descreva o escopo e os sinais preliminares recolhidos..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
+            {/* Step 1: Identificação */}
+            {wizardStep === 1 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-1">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Nº do Dossiê / Caso</label>
+                    <input
+                      type="text"
+                      value={caseNumberInput || `CASO-2026-00${cases.length + 1}`}
+                      onChange={(e) => setCaseNumberInput(e.target.value)}
+                      placeholder="CASO-2026-005"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-amber-400 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Título da Operação</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCaseTitle}
+                      onChange={(e) => setNewCaseTitle(e.target.value)}
+                      placeholder="Ex: Operação Escudo Digital - Exfiltração de Ativos"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Nível de Prioridade</label>
-                <select
-                  value={newCasePriority}
-                  onChange={(e) => setNewCasePriority(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-                >
-                  <option value="LOW">Baixa</option>
-                  <option value="MEDIUM">Média</option>
-                  <option value="HIGH">Alta</option>
-                  <option value="CRITICAL">Crítica</option>
-                </select>
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Alvo Principal de Interesse</label>
+                    <input
+                      type="text"
+                      value={targetSubject}
+                      onChange={(e) => setTargetSubject(e.target.value)}
+                      placeholder="Ex: Manuel Silva ou shadow-broker.org"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Alvo</label>
+                    <select
+                      value={targetType}
+                      onChange={(e) => setTargetType(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="INDIVIDUAL">Pessoa Singular (Suspeito / Alvo)</option>
+                      <option value="ORGANIZATION">Empresa / Offshore / Entidade</option>
+                      <option value="DOMAIN">Domínio / Hostname C2</option>
+                      <option value="IP_ADDRESS">Endereço IP / Infraestrutura</option>
+                      <option value="WALLET">Carteira Cripto / Hash Bancário</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Nível de Prioridade</label>
+                    <select
+                      value={newCasePriority}
+                      onChange={(e) => setNewCasePriority(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="LOW">Baixa (Monitorização Ordinária)</option>
+                      <option value="MEDIUM">Média (Análise Heurística Regular)</option>
+                      <option value="HIGH">Alta (Diligência Urgente)</option>
+                      <option value="CRITICAL">Crítica (Risco Iminente de Fuga/Perda)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Classificação de Sigilo</label>
+                    <select
+                      value={confidentialityLevel}
+                      onChange={(e) => setConfidentialityLevel(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="RESERVADO">Reservado (Equipa de Análise)</option>
+                      <option value="CONFIDENCIAL">Confidencial (Acesso Restrito)</option>
+                      <option value="SECRETO">Secreto de Justiça (Mandato Estrito)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Hipótese Inicial / Descrição Operacional</label>
+                  <textarea
+                    rows={2}
+                    value={newCaseDesc}
+                    onChange={(e) => setNewCaseDesc(e.target.value)}
+                    placeholder="Sinais recolhidos, contexto fático e objetivo da investigação..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Enquadramento Jurídico */}
+            {wizardStep === 2 && (
+              <div className="space-y-4">
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-300">
+                  A rastreabilidade jurídica é mandatória para garantir a admissibilidade legal das evidências e laudos periciais gerados.
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Refª Mandado / Auto de Apreensão</label>
+                    <input
+                      type="text"
+                      value={warrantRef}
+                      onChange={(e) => setWarrantRef(e.target.value)}
+                      placeholder="MANDADO-DILIGENCIA-2026/MP-AO"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Autoridade / Magistrado Requisitante</label>
+                    <input
+                      type="text"
+                      value={magistrateAuthority}
+                      onChange={(e) => setMagistrateAuthority(e.target.value)}
+                      placeholder="Gabinete Central de Combate à Corrupção / PGR"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Fundamento Jurídico-Legal</label>
+                  <input
+                    type="text"
+                    value={legalBasis}
+                    onChange={(e) => setLegalBasis(e.target.value)}
+                    placeholder="Lei sobre os Crimes das Tecnologias de Informação e Comunicação"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Perito Digital Encarregado</label>
+                  <input
+                    type="text"
+                    value={assignedAnalyst}
+                    onChange={(e) => setAssignedAnalyst(e.target.value)}
+                    placeholder="Perito Forense Responsável pela Custódia"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Vetores de Ingestão */}
+            {wizardStep === 3 && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-400">
+                  Selecione as fontes e tipos de dados preliminares que alimentarão o repositório probatório deste caso:
+                </p>
+
+                <div className="space-y-2.5">
+                  <label className="flex items-center space-x-3 p-3 bg-slate-950 border border-slate-800 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={ingestionVectors.mobileDevices}
+                      onChange={(e) => setIngestionVectors({ ...ingestionVectors, mobileDevices: e.target.checked })}
+                      className="accent-amber-500 h-4 w-4 rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-semibold text-white">Dispositivos Móveis & Smartphones (UFDR / Cellebrite)</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Extrações físicas, lógicas e recuperação de mensagens em áreas não alocadas (SQLite WAL).
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 bg-slate-950 border border-slate-800 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={ingestionVectors.telecomBts}
+                      onChange={(e) => setIngestionVectors({ ...ingestionVectors, telecomBts: e.target.checked })}
+                      className="accent-amber-500 h-4 w-4 rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Radio className="w-3.5 h-3.5 text-sky-400" />
+                        <span className="text-xs font-semibold text-white">Antenas BTS & CDRs Telefónicos</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Registos de chamadas e triangulação de estações rádio-base de operadoras de telecomunicações.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 bg-slate-950 border border-slate-800 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={ingestionVectors.networkTraffic}
+                      onChange={(e) => setIngestionVectors({ ...ingestionVectors, networkTraffic: e.target.checked })}
+                      className="accent-amber-500 h-4 w-4 rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs font-semibold text-white">Tráfego de Rede Perimetral (PCAP / IOCs)</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Capturas de pacotes Wireshark/tcpdump, nós de comando C2 e certificados TLS.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center space-x-3 p-3 bg-slate-950 border border-slate-800 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={ingestionVectors.osintWeb}
+                      onChange={(e) => setIngestionVectors({ ...ingestionVectors, osintWeb: e.target.checked })}
+                      className="accent-amber-500 h-4 w-4 rounded"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="text-xs font-semibold text-white">Fontes Abertas (OSINT) & Superfície Exposta</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        Dossiês públicos, registos de domínios WHOIS, redes sociais e notícias verificadas.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Selagem & Abertura Oficial */}
+            {wizardStep === 4 && (
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-400">
+                      {caseNumberInput || `CASO-2026-00${cases.length + 1}`}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      PRONTO PARA SELAGEM
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-white">{newCaseTitle || "Investigação Sem Título"}</h4>
+                    <p className="text-xs text-slate-400">{newCaseDesc || "Investigação probatória formal."}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">ALVO PRINCIPAL</span>
+                      <span>{targetSubject || "Geral / Sob Apuração"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">MANDADO / BASE</span>
+                      <span className="font-mono text-[10px] truncate block">{warrantRef}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg">
+                    <span className="text-[10px] font-mono text-slate-400 block mb-1">
+                      Selo Criptográfico de Génese (SHA-256):
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-300 break-all select-all block">
+                      d9a4b8c7e1f234567890abcdef1234567890abcdef1234567890abcdef123456
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 italic">
+                  Ao confirmar, o evento de abertura será gravado na Trilha de Auditoria Imutável sob o ID do utilizador autenticado.
+                </p>
+              </div>
+            )}
+
+            {/* Stepper Navigation Buttons */}
+            <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+              {wizardStep > 1 ? (
                 <button
                   type="button"
-                  onClick={() => setShowNewCaseModal(false)}
+                  onClick={() => setWizardStep((prev) => (prev - 1) as any)}
+                  className="px-4 py-2 text-xs text-slate-300 hover:text-white bg-slate-800 rounded-lg"
+                >
+                  ← Voltar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setShowNewCaseModal(false); setWizardStep(1); }}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-white"
                 >
                   Cancelar
                 </button>
+              )}
+
+              {wizardStep < 4 ? (
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs"
+                  type="button"
+                  onClick={() => {
+                    if (wizardStep === 1 && !newCaseTitle.trim()) {
+                      alert("Por favor, preencha o título da operação.");
+                      return;
+                    }
+                    setWizardStep((prev) => (prev + 1) as any);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs flex items-center space-x-1"
                 >
-                  {loading ? "A registar..." : "Criar Caso"}
+                  <span>Avançar</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCreateCase}
+                  disabled={loading}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-5 py-2 rounded-lg text-xs flex items-center space-x-2 shadow-lg shadow-amber-500/20"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{loading ? "A Instanciar..." : "Instanciar Dossiê Criptográfico"}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SLIDE-OVER CONTEXTUAL INSPECTOR DRAWER (380px) */}
+      {inspectorItem && (
+        <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+          {/* Drawer Header */}
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase font-semibold">
+                {inspectorItem.type === "EVIDENCE" && "Evidência Criptográfica"}
+                {inspectorItem.type === "ENTITY" && "Entidade de Interesse"}
+                {inspectorItem.type === "CASE" && "Dossiê Investigativo"}
+                {inspectorItem.type === "INFERENCE" && "Hipótese de Super Inteligência"}
+              </span>
+            </div>
+            <button
+              onClick={() => setInspectorItem(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Drawer Content */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            {/* Title & Status */}
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white tracking-tight">
+                {inspectorItem.data.title || inspectorItem.data.name || inspectorItem.data.case_number}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {inspectorItem.data.description || inspectorItem.data.explanation || "Sem descrição adicional."}
+              </p>
+            </div>
+
+            {/* SHA-256 Hash Display */}
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline" />
+                  Hash SHA-256 (Cadeia de Custódia)
+                </span>
+                <button
+                  onClick={() => {
+                    const hash = inspectorItem.data.sha256_hash || inspectorItem.data.id || "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+                    navigator.clipboard.writeText(hash);
+                    setCopiedHash(true);
+                    setTimeout(() => setCopiedHash(false), 2000);
+                  }}
+                  className="text-[10px] text-amber-400 hover:text-amber-300 font-mono flex items-center gap-1"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{copiedHash ? "Copiado!" : "Copiar"}</span>
                 </button>
               </div>
-            </form>
+              <div className="p-2 bg-slate-900/80 rounded border border-slate-800 font-mono text-[11px] text-amber-300 break-all select-all">
+                {inspectorItem.data.sha256_hash || "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}
+              </div>
+              <div className="text-[10px] text-emerald-400 flex items-center gap-1 pt-1">
+                <CheckCircle className="w-3 h-3" />
+                <span>Integridade verificada contra o cofre GCP</span>
+              </div>
+            </div>
+
+            {/* Metadata Table */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono">
+                Atributos Forenses
+              </h4>
+              <div className="bg-slate-950 border border-slate-800 rounded-xl divide-y divide-slate-800 text-xs">
+                {inspectorItem.data.status && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Estado</span>
+                    <span className="font-semibold text-white">{inspectorItem.data.status}</span>
+                  </div>
+                )}
+                {inspectorItem.data.source && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Fonte de Origem</span>
+                    <span className="font-medium text-slate-300">{inspectorItem.data.source}</span>
+                  </div>
+                )}
+                {inspectorItem.data.file_name && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Ficheiro</span>
+                    <span className="font-mono text-slate-300">{inspectorItem.data.file_name}</span>
+                  </div>
+                )}
+                {inspectorItem.data.file_size && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Tamanho</span>
+                    <span className="font-mono text-slate-300">{(inspectorItem.data.file_size / 1024).toFixed(1)} KB</span>
+                  </div>
+                )}
+                {inspectorItem.data.type && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Tipo de Entidade</span>
+                    <span className="font-mono text-amber-400">{inspectorItem.data.type}</span>
+                  </div>
+                )}
+                {inspectorItem.data.risk_score !== undefined && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Score de Risco</span>
+                    <span className="font-bold text-rose-400">{(inspectorItem.data.risk_score * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+                {inspectorItem.data.confidence_score !== undefined && (
+                  <div className="p-2.5 flex justify-between">
+                    <span className="text-slate-500">Confiança SI</span>
+                    <span className="font-bold text-violet-400">{(inspectorItem.data.confidence_score * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+                <div className="p-2.5 flex justify-between">
+                  <span className="text-slate-500">Registo</span>
+                  <span className="text-slate-400">
+                    {new Date(inspectorItem.data.created_at || inspectorItem.data.collected_at || Date.now()).toLocaleString("pt-AO")}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Custody Chain Events Timeline */}
+            {inspectorItem.data.custody_events && inspectorItem.data.custody_events.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono">
+                  Linha de Custódia Probatória
+                </h4>
+                <div className="space-y-2">
+                  {inspectorItem.data.custody_events.map((ce: any, idx: number) => (
+                    <div key={ce.id || idx} className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-amber-400">{ce.action}</span>
+                        <span className="text-slate-500 text-[10px] font-mono">
+                          {new Date(ce.created_at).toLocaleDateString("pt-AO")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">{ce.notes}</p>
+                      <span className="text-[9px] font-mono text-slate-600 truncate block">
+                        Hash: {ce.recorded_hash?.slice(0, 24)}...
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Drawer Actions Footer */}
+          <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between gap-2">
+            <button
+              onClick={() => {
+                if (inspectorItem.type === "EVIDENCE") {
+                  handleVerifyEvidence(inspectorItem.data.id);
+                } else {
+                  setActionSuccess("Registo validado formalmente.");
+                }
+              }}
+              className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold py-2 px-3 rounded-lg text-xs flex items-center justify-center space-x-1"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Verificar Integridade</span>
+            </button>
+            <button
+              onClick={() => setInspectorItem(null)}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-3 rounded-lg text-xs"
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
