@@ -28,7 +28,9 @@ import {
   Building2,
   Lock,
   Smartphone,
-  Radio
+  Radio,
+  Globe,
+  Users
 } from 'lucide-react';
 import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -173,6 +175,50 @@ export function UniversalCommandPalette({
               </span>
             </div>
             <CommandShortcut className="text-[10px] font-mono">BTS</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        {/* MÓDULO OSINT & FONTES ABERTAS */}
+        <CommandGroup heading="Inteligência OSINT & Fontes Abertas">
+          <CommandItem
+            value="osint pesquisa fontes abertas investigacao recon passivo"
+            onSelect={() => runCommand(() => router.push('/osint'))}
+            className="cursor-pointer py-2.5"
+          >
+            <Globe className="mr-2.5 h-4 w-4 text-sky-400" />
+            <div className="flex flex-col flex-1">
+              <span className="font-semibold text-xs text-foreground">Módulo OSINT • Visão Geral & Pesquisa</span>
+              <span className="text-[10px] text-muted-foreground">Motor passivo de busca em fontes públicas, pessoas e empresas</span>
+            </div>
+            <CommandShortcut className="text-sky-400 font-bold">OSINT</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint dominio dns certificados ct whois infraestrutura"
+            onSelect={() => runCommand(() => router.push('/osint?tab=dominio-analyzer'))}
+            className="cursor-pointer py-2"
+          >
+            <Globe className="mr-2.5 h-4 w-4 text-amber-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Reconhecimento de Domínio & DNS</span>
+              <span className="text-[10px] text-muted-foreground truncate">Registos A, MX, NS, SOA e Certificate Transparency crt.sh</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">DNS</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint entidades desambiguacao resolucao entity resolution"
+            onSelect={() => runCommand(() => router.push('/osint?tab=entidades'))}
+            className="cursor-pointer py-2"
+          >
+            <Users className="mr-2.5 h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Resolução de Entidades (Entity Resolution)</span>
+              <span className="text-[10px] text-muted-foreground truncate">Correspondência com score analítico e indicadores de verificação</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">RESOLVER</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 

@@ -44,7 +44,8 @@ import {
   ShieldAlert,
   FolderKanban,
   FileCheck,
-  Smartphone
+  Smartphone,
+  Globe
 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -194,6 +195,9 @@ export function Header({ projectName }: { projectName?: string }) {
           <Button id="header-nav-projects" variant="ghost" size="sm" className="h-8 text-xs font-semibold gap-1.5" asChild>
             <Link href="/investigacao"><FolderKanban className="h-3.5 w-3.5 text-primary" />Casos & Dossiês</Link>
           </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold gap-1.5 text-sky-400 hover:text-sky-300" asChild>
+            <Link href="/osint"><Globe className="h-3.5 w-3.5 text-sky-400" />OSINT</Link>
+          </Button>
           <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold gap-1.5 text-amber-400 hover:text-amber-300" asChild>
             <Link href="/pericia-movel"><Smartphone className="h-3.5 w-3.5 text-amber-400" />Perícia Móvel</Link>
           </Button>
@@ -230,6 +234,8 @@ export function Header({ projectName }: { projectName?: string }) {
           <Separator className="my-1" />
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">Plataforma</div>
           <Component {...props}><Button variant="ghost" className="justify-start w-full text-left" asChild><Link href="/investigacao"><FolderKanban className="mr-2 h-4 w-4 text-primary" />Gestão de Casos & Dossiês</Link></Button></Component>
+          <Component {...props}><Button variant="ghost" className="justify-start w-full text-left text-sky-400" asChild><Link href="/osint"><Globe className="mr-2 h-4 w-4 text-sky-400" />Módulo OSINT (Fontes Abertas)</Link></Button></Component>
+          <Component {...props}><Button variant="ghost" className="justify-start w-full text-left text-amber-400" asChild><Link href="/pericia-movel"><Smartphone className="mr-2 h-4 w-4 text-amber-400" />Laboratório de Perícia Móvel</Link></Button></Component>
           <Component {...props}><Button variant="ghost" className="justify-start w-full text-left" asChild><Link href="/investigacao#custodia"><Fingerprint className="mr-2 h-4 w-4 text-emerald-500" />Cadeia de Custódia GCP</Link></Button></Component>
           <Component {...props}><Button variant="ghost" className="justify-start w-full text-left" asChild><Link href="/investigacao#grafo"><Share2 className="mr-2 h-4 w-4 text-purple-500" />Grafos de Relacionamentos</Link></Button></Component>
           <Component {...props}><Button variant="ghost" className="justify-start w-full text-left" asChild><Link href="/investigacao#si"><BrainCircuit className="mr-2 h-4 w-4 text-violet-500" />Sistema de Inteligência (SI)</Link></Button></Component>
@@ -311,6 +317,15 @@ export function Header({ projectName }: { projectName?: string }) {
                 <div>
                   <div className="font-medium text-xs">Gestão de Casos & Dossiês</div>
                   <p className="text-[11px] text-muted-foreground">Investigação estruturada e membros</p>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-lg p-2.5 cursor-pointer">
+              <Link href="/osint" className="flex items-start gap-2.5">
+                <Globe className="h-4 w-4 text-sky-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium text-xs text-sky-400 font-semibold">Módulo OSINT (Fontes Abertas)</div>
+                  <p className="text-[11px] text-muted-foreground">Reconhecimento passivo, WHOIS, DNS e CT Logs</p>
                 </div>
               </Link>
             </DropdownMenuItem>
