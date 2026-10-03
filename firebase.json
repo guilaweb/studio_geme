@@ -8,6 +8,8 @@
     "ignore": [
       "node_modules",
       ".git",
+      ".next",
+      ".pytest_cache",
       "firebase-debug.log",
       "firebase-debug.*.log",
       "functions"
