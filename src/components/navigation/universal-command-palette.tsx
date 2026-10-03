@@ -33,7 +33,9 @@ import {
   Users,
   Server,
   Mail,
-  Camera
+  Camera,
+  Layers,
+  Scale
 } from 'lucide-react';
 import { collection, onSnapshot, query, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -274,6 +276,45 @@ export function UniversalCommandPalette({
               <span className="text-[10px] text-muted-foreground truncate">Parâmetros ópticos, geolocalização por satélite e Perceptual Hash</span>
             </div>
             <CommandShortcut className="text-[10px] font-mono">EXIF</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint scraping coleta crawl spider website monitoring snapshots diff web"
+            onSelect={() => runCommand(() => router.push('/osint?tab=scraping'))}
+            className="cursor-pointer py-2"
+          >
+            <Layers className="mr-2.5 h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Scraping & Coleta Automatizada</span>
+              <span className="text-[10px] text-muted-foreground truncate">Jobs assíncronos, monitoramento de websites e diff histórico</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">SCRAPE</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint dorks construtor busca google bing duckduckgo templates consultas avancadas"
+            onSelect={() => runCommand(() => router.push('/osint?tab=dorks'))}
+            className="cursor-pointer py-2"
+          >
+            <Search className="mr-2.5 h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">Dork Builder & Descoberta Ética</span>
+              <span className="text-[10px] text-muted-foreground truncate">Consultas estruturadas, templates forenses e salvaguarda contra intrusão</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">DORKS</CommandShortcut>
+          </CommandItem>
+
+          <CommandItem
+            value="osint tos termos servico robots txt compliance gate politicas conformidade legal"
+            onSelect={() => runCommand(() => router.push('/osint?tab=tos'))}
+            className="cursor-pointer py-2"
+          >
+            <Scale className="mr-2.5 h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col flex-1 truncate">
+              <span className="font-semibold text-xs text-foreground truncate">ToS Intelligence & Compliance Gate</span>
+              <span className="text-[10px] text-muted-foreground truncate">Matriz de direitos ToS, parser robots.txt e validação prévia de coleta</span>
+            </div>
+            <CommandShortcut className="text-[10px] font-mono">TOS</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 

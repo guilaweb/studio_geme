@@ -33,7 +33,8 @@ import {
   FileDown,
   Link2,
   Mail,
-  Camera
+  Camera,
+  Scale
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
@@ -63,6 +64,9 @@ import { OsintIpAnalyzer } from "@/components/osint/osint-ip-analyzer";
 import { OsintCompanyAnalyzer } from "@/components/osint/osint-company-analyzer";
 import { OsintEmailAnalyzer } from "@/components/osint/osint-email-analyzer";
 import { OsintMediaAnalyzer } from "@/components/osint/osint-media-analyzer";
+import { OsintScrapingWorkspace } from "@/components/osint/scraping/osint-scraping-workspace";
+import { OsintDorkBuilder } from "@/components/osint/dorks/osint-dork-builder";
+import { OsintTosIntelligence } from "@/components/osint/tos/osint-tos-intelligence";
 
 export default function OsintPage() {
   const { user } = useAuth();
@@ -78,6 +82,9 @@ export default function OsintPage() {
     | "relacoes"
     | "timeline"
     | "coletores"
+    | "scraping"
+    | "dorks"
+    | "tos"
     | "dominio-analyzer"
     | "ip-analyzer"
     | "empresa-analyzer"
@@ -139,6 +146,9 @@ export default function OsintPage() {
           "relacoes",
           "timeline",
           "coletores",
+          "scraping",
+          "dorks",
+          "tos",
           "dominio-analyzer",
           "ip-analyzer",
           "empresa-analyzer",
@@ -474,6 +484,42 @@ export default function OsintPage() {
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Coletores Assíncronos</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("scraping")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "scraping"
+                ? "bg-slate-900 text-emerald-400 border-t-2 border-emerald-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Scraping & Coleta</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("dorks")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "dorks"
+                ? "bg-slate-900 text-emerald-400 border-t-2 border-emerald-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Search className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Dork Builder</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("tos")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "tos"
+                ? "bg-slate-900 text-emerald-400 border-t-2 border-emerald-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Scale className="w-3.5 h-3.5 text-emerald-400" />
+            <span>ToS & Políticas</span>
           </button>
 
           <button
@@ -1163,6 +1209,21 @@ export default function OsintPage() {
         {/* ABA 9: COLETORES ASSÍNCRONOS */}
         {/* ============================================================ */}
         {activeTab === "coletores" && <OsintCollectors />}
+
+        {/* ============================================================ */}
+        {/* SUBMÓDULO: SCRAPING & COLETA PASSIVA AUTORIZADA */}
+        {/* ============================================================ */}
+        {activeTab === "scraping" && <OsintScrapingWorkspace />}
+
+        {/* ============================================================ */}
+        {/* SUBMÓDULO: DORK BUILDER & DESCOBERTA ÉTICA */}
+        {/* ============================================================ */}
+        {activeTab === "dorks" && <OsintDorkBuilder />}
+
+        {/* ============================================================ */}
+        {/* SUBMÓDULO: TOS INTELLIGENCE & COMPLIANCE GATE */}
+        {/* ============================================================ */}
+        {activeTab === "tos" && <OsintTosIntelligence />}
 
         {/* ============================================================ */}
         {/* ABA 10: RECONHECIMENTO DE DOMÍNIO ESPECÍFICO */}
