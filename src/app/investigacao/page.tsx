@@ -178,6 +178,55 @@ const INITIAL_ENTITIES: Record<string, EntityItem[]> = {
       attributes: { jurisdicao: "Seychelles", data_constituicao: "2024-03-12" },
       created_at: "2026-09-28T11:45:00Z",
     },
+    {
+      id: "ent-005",
+      organization_id: "org-profundidade-lab",
+      case_id: "case-001",
+      type: "EQUIPMENT",
+      name: "iPhone 15 Pro Max (DEV-2026-001)",
+      identifier: "IMEI 359123450912384 • Serial H9D71X902L",
+      risk_score: 0.95,
+      status: "ACTIVE",
+      attributes: {
+        origem_forense: "UFDR Celular",
+        mandado: "Mandado Judicial nº 42/2026 - SIC / PGR",
+        extracao: "Sistema de Ficheiros Avançado",
+        sha256_custodia: "8f9b4c12d5e3f890123456789abcdef0123456789abcdef0123456789abcdef0"
+      },
+      created_at: "2026-09-28T12:00:00Z",
+    },
+    {
+      id: "ent-006",
+      organization_id: "org-profundidade-lab",
+      case_id: "case-001",
+      type: "INDIVIDUAL",
+      name: "Contacto Offshore Suíça (+41 79 123 4567)",
+      identifier: "MSISDN +41 79 123 4567",
+      risk_score: 0.92,
+      status: "ACTIVE",
+      attributes: {
+        origem_forense: "UFDR Celular",
+        transacoes_detectadas: "250.000 USD (Estrutura Fiduciária)",
+        antena_bts: "BTS-LUANDA-TALATONA-04"
+      },
+      created_at: "2026-09-28T12:15:00Z",
+    },
+    {
+      id: "ent-007",
+      organization_id: "org-profundidade-lab",
+      case_id: "case-001",
+      type: "DOCUMENT",
+      name: "contrato_offshore_vortex_assinado.pdf",
+      identifier: "Artefacto SQLite WAL Recuperado (Bloco 4912)",
+      risk_score: 0.98,
+      status: "ACTIVE",
+      attributes: {
+        origem_forense: "UFDR Celular",
+        estado: "Deletado pelo Alvo / Recuperado da Memória",
+        relevancia: "Prova Material de Vínculo Fiduciário"
+      },
+      created_at: "2026-09-28T12:20:00Z",
+    },
   ],
 };
 
@@ -188,11 +237,19 @@ const INITIAL_GRAPHS: Record<string, GraphData> = {
       { id: "ent-002", label: "shadow-secure-transfer.net", type: "DOMAIN", risk_score: 0.95 },
       { id: "ent-003", label: "0x71C...49A2 (ETH)", type: "WALLET", risk_score: 0.90 },
       { id: "ent-004", label: "Vortex Consulting", type: "ORGANIZATION", risk_score: 0.70 },
+      { id: "ent-005", label: "iPhone 15 Pro Max (UFDR)", type: "EQUIPMENT", risk_score: 0.95 },
+      { id: "ent-006", label: "Contacto Suíça (+41 79...)", type: "INDIVIDUAL", risk_score: 0.92 },
+      { id: "ent-007", label: "Contrato Offshore WAL", type: "DOCUMENT", risk_score: 0.98 },
     ],
     edges: [
       { id: "edge-1", source: "ent-001", target: "ent-004", label: "BENEFICIAL_OWNER", confidence: 0.98, is_inferred_by_si: false },
       { id: "edge-2", source: "ent-004", target: "ent-002", label: "REGISTRANT", confidence: 0.92, is_inferred_by_si: false },
       { id: "edge-3", source: "ent-002", target: "ent-003", label: "EXFILTRATION_DESTINATION", confidence: 0.88, is_inferred_by_si: true },
+      { id: "edge-4", source: "ent-001", target: "ent-005", label: "POSSUI_DISPOSITIVO", confidence: 0.99, is_inferred_by_si: false },
+      { id: "edge-5", source: "ent-005", target: "ent-006", label: "COMUNICAÇÃO_WHATSAPP", confidence: 0.97, is_inferred_by_si: false },
+      { id: "edge-6", source: "ent-006", target: "ent-004", label: "REPRESENTANTE_FIDUCIÁRIO", confidence: 0.94, is_inferred_by_si: true },
+      { id: "edge-7", source: "ent-005", target: "ent-007", label: "SQLITE_WAL_RECOVERY", confidence: 0.99, is_inferred_by_si: false },
+      { id: "edge-8", source: "ent-007", target: "ent-003", label: "VINCULO_BANCARIO_CRYPTO", confidence: 0.91, is_inferred_by_si: true },
     ],
   },
 };
@@ -247,6 +304,30 @@ const INITIAL_EVIDENCES: Record<string, EvidenceItem[]> = {
         },
       ],
     },
+    {
+      id: "ev-003",
+      organization_id: "org-profundidade-lab",
+      case_id: "case-001",
+      title: "Extração Pericial UFDR - iPhone 15 Pro Max (DEV-2026-001)",
+      description: "Sistema de ficheiros avançado com bancos SQLite normalizados, 14.892 mensagens e 342 registos recuperados.",
+      file_name: "DEV_2026_001_iPhone15ProMax_Extraction.ufdr",
+      file_size: 68420000000,
+      mime_type: "application/x-ufdr-forensic",
+      sha256_hash: "8f9b4c12d5e3f890123456789abcdef0123456789abcdef0123456789abcdef0",
+      source: "Laboratório de Perícia Móvel PROFUNDIDADE",
+      version: 1,
+      status: "VERIFIED",
+      collected_at: "2026-09-28T09:30:00Z",
+      custody_events: [
+        {
+          id: "ce-3",
+          action: "SEALED",
+          recorded_hash: "8f9b4c12d5e3f890123456789abcdef0123456789abcdef0123456789abcdef0",
+          notes: "Extração física autenticada e selada sob Art. 212º do Código de Processo Penal.",
+          created_at: "2026-09-28T09:35:00Z",
+        },
+      ],
+    },
   ],
 };
 
@@ -275,6 +356,18 @@ const INITIAL_INFERENCES: Record<string, SiInference[]> = {
       legal_disclaimer: "Análise assistida por IA para priorização investigativa.",
       human_validation_status: "CONFIRMED",
       created_at: "2026-09-28T13:10:00Z",
+    },
+    {
+      id: "inf-003",
+      case_id: "case-001",
+      inference_type: "MOBILE_CORRELATION",
+      title: "Correlação Forense UFDR: Alocação Offshore de 250.000 USD via WhatsApp",
+      explanation: "O dump pericial do iPhone 15 Pro Max (IMEI 359123450912384) revelou mensagem deliberadamente apagada para o contacto suíço +41 79 123 4567 instruindo a alocação de fundos na Vortex Consulting, triangulada na antena BTS-LUANDA-TALATONA-04.",
+      confidence_score: 0.98,
+      is_automated: true,
+      legal_disclaimer: "Artefacto recuperado via análise física de blocos SQLite WAL (ChatStorage.sqlite).",
+      human_validation_status: "CONFIRMED",
+      created_at: "2026-09-28T13:30:00Z",
     },
   ],
 };
@@ -1494,9 +1587,17 @@ export default function InvestigacaoWorkspace() {
                       className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 cursor-pointer rounded-xl p-4 space-y-3 transition-all group"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
-                          {ent.type}
-                        </span>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+                            {ent.type}
+                          </span>
+                          {ent.attributes?.origem_forense === "UFDR Celular" && (
+                            <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center space-x-1">
+                              <Smartphone className="w-2.5 h-2.5" />
+                              <span>UFDR</span>
+                            </span>
+                          )}
+                        </div>
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                             ent.risk_score > 0.7
@@ -1529,18 +1630,27 @@ export default function InvestigacaoWorkspace() {
             {/* TAB CONTENT: GRAPH */}
             {caseTab === "graph" && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-white">Grafo Relacional Multidimensional</h3>
                     <p className="text-xs text-slate-400">Nós, arestas e correlações inferidas pela Super Inteligência.</p>
                   </div>
-                  <button
-                    onClick={() => setShowNewRelModal(true)}
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Ligar Entidades</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <a
+                      href="/pericia-movel"
+                      className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-colors"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Laboratório de Perícia Móvel</span>
+                    </a>
+                    <button
+                      onClick={() => setShowNewRelModal(true)}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Ligar Entidades</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 min-h-[350px] flex flex-col justify-center items-center relative overflow-hidden">
@@ -1549,13 +1659,31 @@ export default function InvestigacaoWorkspace() {
                   {graphData && graphData.nodes.length > 0 ? (
                     <div className="w-full space-y-6 z-10">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {graphData.nodes.map((n) => (
-                          <div key={n.id} className="bg-slate-950/80 border border-slate-700/60 p-3 rounded-lg text-center shadow-lg">
-                            <span className="text-[10px] font-mono text-amber-400 block mb-1">{n.type}</span>
-                            <span className="text-xs font-bold text-white block">{n.label}</span>
-                            <span className="text-[10px] text-rose-400 block mt-1">Risco: {(n.risk_score * 100).toFixed(0)}%</span>
-                          </div>
-                        ))}
+                        {graphData.nodes.map((n) => {
+                          const isMobile = n.id === "ent-005" || n.id === "ent-006" || n.id === "ent-007" || n.type === "EQUIPMENT";
+                          return (
+                            <div
+                              key={n.id}
+                              className={`p-3 rounded-lg text-center shadow-lg transition-all ${
+                                isMobile
+                                  ? "bg-amber-950/20 border border-amber-500/50 shadow-amber-950/20"
+                                  : "bg-slate-950/80 border border-slate-700/60"
+                              }`}
+                            >
+                              <div className="flex items-center justify-center space-x-1 mb-1">
+                                {isMobile && <Smartphone className="w-3 h-3 text-amber-400" />}
+                                <span className="text-[10px] font-mono text-amber-400 block">{n.type}</span>
+                              </div>
+                              <span className="text-xs font-bold text-white block">{n.label}</span>
+                              <span className="text-[10px] text-rose-400 block mt-1">Risco: {(n.risk_score * 100).toFixed(0)}%</span>
+                              {isMobile && (
+                                <span className="text-[9px] font-mono text-amber-400/90 block mt-1 bg-amber-500/10 py-0.5 rounded border border-amber-500/20">
+                                  UFDR CORRELACIONADO
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="pt-4 border-t border-slate-800">

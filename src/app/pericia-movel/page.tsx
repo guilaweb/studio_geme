@@ -40,10 +40,13 @@ import {
   Copy,
   X,
   Eye,
-  ShieldCheck
+  ShieldCheck,
+  Printer
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/use-auth";
+import { generateForensicPdf } from "@/lib/forensic-report-pdf";
+import { BtsTriangulationMap } from "@/components/forensics/bts-triangulation-map";
 
 // Tipos para Perícia Móvel
 interface SeizedDevice {
@@ -362,7 +365,7 @@ export default function PericiaMovelPage() {
   const [devicesList, setDevicesList] = useState<SeizedDevice[]>(SAMPLE_DEVICES);
   const [selectedDevice, setSelectedDevice] = useState<SeizedDevice>(SAMPLE_DEVICES[0]);
   const [activeTab, setActiveTab] = useState<
-    "dispositivos" | "mensagens" | "chamadas" | "galeria" | "timeline" | "recuperados" | "laudo"
+    "dispositivos" | "mensagens" | "chamadas" | "galeria" | "timeline" | "recuperados" | "cartografia" | "laudo"
   >("dispositivos");
 
   const [messageSearch, setMessageSearch] = useState("");
@@ -370,6 +373,26 @@ export default function PericiaMovelPage() {
   const [showIngestionModal, setShowIngestionModal] = useState(false);
   const [ingestionCaseRef, setIngestionCaseRef] = useState("CASO-2026-001");
   const [ingestionSuccess, setIngestionSuccess] = useState<string | null>(null);
+
+  // Correlação com Dossiê / Caso de Investigação (SI)
+  const [isCorrelatedWithCase, setIsCorrelatedWithCase] = useState<boolean>(true);
+  const [correlationFeedback, setCorrelationFeedback] = useState<string | null>(null);
+
+  const handleCorrelateWithCase = () => {
+    setIsCorrelatedWithCase(true);
+    setCorrelationFeedback(
+      `Dispositivo ${selectedDevice.model} (${selectedDevice.id}) e artefactos UFDR correlacionados com sucesso ao Dossiê ${selectedDevice.caseNumber}. Entidades, alvos e comunicações sincronizados no Grafo Relacional e na Super Inteligência (SI).`
+    );
+  };
+
+  const handleDownloadPdfReport = () => {
+    generateForensicPdf({
+      device: selectedDevice,
+      messages: SAMPLE_MESSAGES,
+      calls: SAMPLE_CALLS,
+      photos: SAMPLE_PHOTOS,
+    });
+  };
 
   // Inspector lateral contextual (380px)
   const [forensicInspector, setForensicInspector] = useState<{
@@ -478,6 +501,15 @@ export default function PericiaMovelPage() {
             </div>
 
             <button
+              onClick={handleCorrelateWithCase}
+              className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-all"
+              title="Correlacionar artefactos extraídos diretamente ao Grafo Relacional e SI do Dossiê"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Correlacionar com Dossiê (SI)</span>
+            </button>
+
+            <button
               onClick={() => setShowIngestionModal(true)}
               className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md cursor-pointer transition-all"
             >
@@ -497,6 +529,27 @@ export default function PericiaMovelPage() {
               <span>{ingestionSuccess}</span>
             </div>
             <button onClick={() => setIngestionSuccess(null)} className="hover:text-white">✕</button>
+          </div>
+        </div>
+      )}
+
+      {/* Alerta de Correlação com Grafo de Investigação */}
+      {correlationFeedback && (
+        <div className="bg-amber-950/80 border-b border-amber-500/40 text-amber-200 text-xs px-6 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>{correlationFeedback}</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Link
+                href="/investigacao"
+                className="underline text-amber-400 font-bold hover:text-amber-300 text-[11px]"
+              >
+                Abrir Grafo do Dossiê →
+              </Link>
+              <button onClick={() => setCorrelationFeedback(null)} className="hover:text-white">✕</button>
+            </div>
           </div>
         </div>
       )}
@@ -638,6 +691,18 @@ export default function PericiaMovelPage() {
           >
             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             <span>Dados Eliminados & SQLite WAL</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("cartografia")}
+            className={`px-4 py-2 rounded-t-lg text-xs font-semibold flex items-center space-x-2 transition-colors shrink-0 ${
+              activeTab === "cartografia"
+                ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Cartografia & Triangulação BTS</span>
           </button>
 
           <button
@@ -1044,21 +1109,60 @@ export default function PericiaMovelPage() {
           </div>
         )}
 
+        {/* TAB: CARTOGRAFIA FORENSE & TRIANGULAÇÃO BTS */}
+        {activeTab === "cartografia" && (
+          <BtsTriangulationMap
+            onSelectWaypoint={(wp) =>
+              setForensicInspector({
+                type: "TIMELINE",
+                data: {
+                  time: wp.time,
+                  title: wp.title,
+                  description: wp.detail,
+                  sourceApp: "Reconstituição Cartográfica BTS / GPS",
+                },
+              })
+            }
+            onSelectBts={(bts) =>
+              setForensicInspector({
+                type: "CALL",
+                data: {
+                  contactName: bts.code,
+                  phoneNumber: bts.operator,
+                  callType: "BTS",
+                  duration: `${bts.coverageKm} km`,
+                  timestamp: "Conexão Ativa",
+                  cellTowerBts: bts.name,
+                },
+              })
+            }
+          />
+        )}
+
         {/* TAB 7: LAUDO PERICIAL OFICIAL */}
         {activeTab === "laudo" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-white">Laudo Pericial Oficial de Computação Forense</h3>
                 <p className="text-xs text-slate-400">Documento formal assinado e selado criptograficamente para apresentação judicial.</p>
               </div>
-              <button
-                onClick={() => alert("Laudo Pericial consolidado e preparado para exportação oficial com selo SHA-256.")}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Exportar Dossiê em PDF</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Imprimir A4 Judicial</span>
+                </button>
+                <button
+                  onClick={handleDownloadPdfReport}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Descarregar Laudo em PDF</span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6 font-mono text-xs text-slate-300 leading-relaxed shadow-2xl">
