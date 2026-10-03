@@ -124,7 +124,8 @@ export default function LoginPage() {
     setApiError(null);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/dashboard');
+      const redirectUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') || '/investigacao' : '/investigacao';
+      router.push(redirectUrl);
     } catch (error: any) {
       handleFirebaseError(error, 'Erro de Login');
     } finally {
@@ -157,7 +158,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await confirmationResult.confirm(values.code);
-      router.push('/dashboard');
+      const redirectUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') || '/investigacao' : '/investigacao';
+      router.push(redirectUrl);
     } catch (error) {
       handleFirebaseError(error, 'Erro de Verificação');
     } finally {
@@ -170,7 +172,8 @@ export default function LoginPage() {
     setApiError(null);
     try {
       await signInWithPopup(auth, googleProvider);
-      router.push('/dashboard');
+      const redirectUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') || '/investigacao' : '/investigacao';
+      router.push(redirectUrl);
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         handleFirebaseError(error, 'Erro com o Google');

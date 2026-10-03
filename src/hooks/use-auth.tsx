@@ -284,7 +284,8 @@ export const useRedirectIfAuthenticated = (intendedFor: 'user' | 'client' | 'any
                 }
             } else {
                 if (isAuthPage || isPortalLoginPage || intendedFor === 'client') {
-                    router.push('/dashboard');
+                    const redirectUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') || '/investigacao' : '/investigacao';
+                    router.push(redirectUrl);
                 }
             }
         }
