@@ -43,7 +43,8 @@ import {
   BrainCircuit,
   ShieldAlert,
   FolderKanban,
-  FileCheck
+  FileCheck,
+  Smartphone
 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -135,6 +136,11 @@ export function Header({ projectName }: { projectName?: string }) {
               </Button>
             </SheetClose>
             <SheetClose asChild>
+              <Button variant="ghost" className="justify-start w-full text-left font-semibold text-amber-400" asChild>
+                <Link href="/pericia-movel"><Smartphone className="mr-2 h-4 w-4 text-amber-400" />Perícia Móvel (Cellebrite)</Link>
+              </Button>
+            </SheetClose>
+            <SheetClose asChild>
               <Button variant="ghost" className="justify-start w-full text-left" asChild>
                 <Link href="/investigacao#custodia"><Fingerprint className="mr-2 h-4 w-4 text-emerald-500" />Custódia SHA-256</Link>
               </Button>
@@ -187,6 +193,9 @@ export function Header({ projectName }: { projectName?: string }) {
         <div className="flex items-center gap-1">
           <Button id="header-nav-projects" variant="ghost" size="sm" className="h-8 text-xs font-semibold gap-1.5" asChild>
             <Link href="/investigacao"><FolderKanban className="h-3.5 w-3.5 text-primary" />Casos & Dossiês</Link>
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold gap-1.5 text-amber-400 hover:text-amber-300" asChild>
+            <Link href="/pericia-movel"><Smartphone className="h-3.5 w-3.5 text-amber-400" />Perícia Móvel</Link>
           </Button>
           <Button variant="ghost" size="sm" className="h-8 text-xs font-medium gap-1.5" asChild>
             <Link href="/investigacao#custodia"><Fingerprint className="h-3.5 w-3.5 text-emerald-500" />Custódia SHA-256</Link>
@@ -302,6 +311,15 @@ export function Header({ projectName }: { projectName?: string }) {
                 <div>
                   <div className="font-medium text-xs">Gestão de Casos & Dossiês</div>
                   <p className="text-[11px] text-muted-foreground">Investigação estruturada e membros</p>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="rounded-lg p-2.5 cursor-pointer">
+              <Link href="/pericia-movel" className="flex items-start gap-2.5">
+                <Smartphone className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium text-xs text-amber-400 font-semibold">Laboratório de Perícia Móvel</div>
+                  <p className="text-[11px] text-muted-foreground">Extração UFDR, WhatsApp, SQLite e EXIF</p>
                 </div>
               </Link>
             </DropdownMenuItem>
