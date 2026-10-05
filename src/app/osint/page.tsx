@@ -68,6 +68,14 @@ import { OsintScrapingWorkspace } from "@/components/osint/scraping/osint-scrapi
 import { OsintDorkBuilder } from "@/components/osint/dorks/osint-dork-builder";
 import { OsintTosIntelligence } from "@/components/osint/tos/osint-tos-intelligence";
 import { OsintIdentityWorkspace } from "@/components/osint/identity/osint-identity-workspace";
+import {
+  subscribeToOsintSearches,
+  saveOsintSearch,
+  subscribeToOsintResults,
+  saveOsintResult,
+  subscribeToOsintDiscoveries,
+  saveOsintDiscovery,
+} from "@/lib/osint-db-service";
 
 export default function OsintPage() {
   const { user } = useAuth();
@@ -134,6 +142,26 @@ export default function OsintPage() {
   const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
+    // Sincronização em tempo real com o banco de dados Cloud Firestore
+    const unsubSearches = subscribeToOsintSearches((list) => {
+      if (list && list.length > 0) {
+        setSearches(list);
+        setSelectedSearch((prev) => (list.find((s) => s.id === prev.id) || list[0]));
+      }
+    });
+
+    const unsubResults = subscribeToOsintResults((list) => {
+      if (list && list.length > 0) {
+        setResults(list);
+      }
+    });
+
+    const unsubDisc = subscribeToOsintDiscoveries((list) => {
+      if (list && list.length > 0) {
+        setDiscoveries(list);
+      }
+    });
+
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
@@ -165,6 +193,12 @@ export default function OsintPage() {
         }
       }
     }
+
+    return () => {
+      unsubSearches();
+      unsubResults();
+      unsubDisc();
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -259,7 +293,11 @@ export default function OsintPage() {
     setSelectedSearch(newRecord);
     setResults((prev) => [newRes, ...prev]);
 
-    showToast(`Pesquisa sobre "${newRecord.targetQuery}" concluída com sucesso. 4 novos resultados normalizados.`);
+    // Persistência em tempo real no banco de dados Firestore
+    saveOsintSearch(newRecord);
+    saveOsintResult(newRes);
+
+    showToast(`Pesquisa sobre "${newRecord.targetQuery}" gravada no banco de dados. 4 novos resultados normalizados.`);
     setActiveTab("pesquisas");
   };
 
@@ -284,6 +322,8 @@ export default function OsintPage() {
     };
 
     setDiscoveries((prev) => [newDisc, ...prev]);
+    // Persistência em tempo real no banco de dados Firestore
+    saveOsintDiscovery(newDisc);
     setShowNewDiscoveryModal(false);
     setNewDiscTitle("");
     setNewDiscDesc("");

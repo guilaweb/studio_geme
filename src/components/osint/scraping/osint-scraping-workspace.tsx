@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Layers,
   Globe,
@@ -34,6 +34,10 @@ import {
   INITIAL_WEBSITE_SNAPSHOT,
   evaluateComplianceGate,
 } from "@/lib/osint-advanced-engine";
+import {
+  subscribeToScrapeJobs,
+  saveScrapeJob,
+} from "@/lib/osint-db-service";
 
 export function OsintScrapingWorkspace() {
   const [activeSubTab, setActiveSubTab] = useState<"novo-coletor" | "jobs" | "resultados" | "alteracoes">("jobs");
@@ -41,6 +45,16 @@ export function OsintScrapingWorkspace() {
   const [selectedJob, setSelectedJob] = useState<ScrapeJob>(INITIAL_SCRAPE_JOBS[0]);
   const [results, setResults] = useState<ScrapeResult[]>(INITIAL_SCRAPE_RESULTS);
   const [snapshot, setSnapshot] = useState<ScrapeSnapshot>(INITIAL_WEBSITE_SNAPSHOT);
+
+  useEffect(() => {
+    const unsub = subscribeToScrapeJobs((list) => {
+      if (list && list.length > 0) {
+        setJobs(list);
+        setSelectedJob((prev) => (list.find((j) => j.id === prev.id) || list[0]));
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Form State Novo Coletor
   const [targetUrl, setTargetUrl] = useState("https://vortex-consulting.org");
@@ -104,9 +118,11 @@ export function OsintScrapingWorkspace() {
 
     setJobs([newJob, ...jobs]);
     setSelectedJob(newJob);
+    // Persistência em tempo real no banco de dados Firestore
+    saveScrapeJob(newJob);
     setShowComplianceModal(false);
     setActiveSubTab("jobs");
-    showToast(`Coletor [${newJob.id}] instanciado com sucesso. Executando sob salvaguardas de conformidade.`);
+    showToast(`Coletor [${newJob.id}] gravado no banco de dados e instanciado com sucesso.`);
   };
 
   const handlePreserveResult = (resId: string) => {

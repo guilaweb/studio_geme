@@ -52,6 +52,11 @@ import {
   IdentitySourceRecord,
   IdentitySearchHistoryRecord,
 } from "@/lib/identity-resolution-types";
+import {
+  subscribeToPhoneRecords,
+  subscribeToIdentityGraphEdges,
+  updateIdentityGraphEdgeDoc,
+} from "@/lib/osint-db-service";
 
 export function OsintIdentityWorkspace() {
   // Sub-abas do módulo de Identidade
@@ -93,11 +98,31 @@ export function OsintIdentityWorkspace() {
     details: string;
   } | null>(null);
 
-  // Atualiza deteção automática ao digitar
+  // Atualiza deteção automática ao digitar e subscreve ao banco de dados Firestore
   useEffect(() => {
     const det = detectIdentityInputType(searchQuery);
     setDetectedType(det);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const unsubPhones = subscribeToPhoneRecords((list) => {
+      if (list && list.length > 0) {
+        setPhoneRecords(list);
+        setSelectedPhone((prev) => (list.find((p) => p.phoneNumber === prev.phoneNumber) || list[0]));
+      }
+    });
+
+    const unsubEdges = subscribeToIdentityGraphEdges((list) => {
+      if (list && list.length > 0) {
+        setGraphEdges(list);
+      }
+    });
+
+    return () => {
+      unsubPhones();
+      unsubEdges();
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -168,7 +193,12 @@ export function OsintIdentityWorkspace() {
         validatorName: "Perito Responsável (Auditado)",
       });
     }
-    showToast(`Ligação ${edgeId} reclassificada para "${newState}".`);
+    // Persistência em tempo real no banco de dados Firestore
+    updateIdentityGraphEdgeDoc(edgeId, {
+      state: newState,
+      validatorName: "Perito Responsável (Auditado)",
+    });
+    showToast(`Ligação ${edgeId} reclassificada para "${newState}" no banco de dados.`);
   };
 
   const getLinkStateBadge = (state: IdentityLinkState) => {
