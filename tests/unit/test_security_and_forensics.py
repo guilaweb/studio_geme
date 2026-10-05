@@ -2,6 +2,7 @@ import hashlib
 import os
 import tempfile
 import pytest
+import src.models
 from src.modules.evidence.router import compute_sha256
 from src.modules.si.models import SiInference
 from src.modules.reports.models import Report
